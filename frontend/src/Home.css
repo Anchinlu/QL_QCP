@@ -1,0 +1,789 @@
+/* src/Home.css */
+/* Import font chữ hiện đại */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap');
+
+/* Bảng màu & Font */
+:root {
+  --primary-green: #13c95f;   /* Xanh lá chủ đạo */
+  --secondary-green: #27ae60; /* Xanh đậm cho hover */
+  --text-dark: #2c3e50;       /* Màu chữ chính */
+  --text-light: #7f8c8d;      /* Màu chữ phụ */
+  --bg-white: #ffffff;        /* Màu nền */
+  --circle-outer: #fff5e6;    /* Vàng kem rất nhạt (vòng ngoài) */
+  --circle-inner: #feebd0;    /* Vàng kem nhạt (vòng trong) */
+  --font-main: 'Poppins', sans-serif;
+}
+
+body {
+  font-family: var(--font-main);
+  margin: 0;
+  color: var(--text-dark);
+  background-color: var(--bg-white);
+}
+
+/* --- 1. NAVBAR (Header) --- */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.2rem 5%; /* Padding thoáng hơn */
+  background: var(--bg-white);
+  /* Bóng đổ nhẹ nhàng */
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.logo {
+  font-size: 1.8rem;
+  font-weight: 800; /* Font đậm tạo điểm nhấn */
+  color: var(--primary-green);
+  letter-spacing: -0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* --- NAV LINKS (Đã cập nhật hiệu ứng Background Pill) --- */
+.nav-links {
+  display: flex;
+  gap: 1rem; /* Khoảng cách giữa các nút */
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: var(--text-dark);
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  position: relative;
+  
+  /* Thêm padding để tạo khoảng không cho hiệu ứng nền */
+  padding: 8px 20px; 
+  border-radius: 25px; /* Bo tròn như viên thuốc */
+}
+
+/* Hiệu ứng khi rê chuột vào (Hover) */
+.nav-links a:hover {
+  color: var(--primary-green); /* Chữ chuyển màu xanh */
+  background-color: #eafaf1;   /* Nền hiện màu xanh rất nhạt */
+  transform: translateY(-2px); /* Nổi lên nhẹ 1 chút */
+  box-shadow: 0 4px 10px rgba(46, 204, 113, 0.15); /* Bóng đổ nhẹ */
+}
+
+.user-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.cart-btn {
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.cart-btn:hover { transform: scale(1.1); }
+
+.cart-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background-color: #e74c3c;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: bold;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.user-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  /* Viền xanh lá làm nổi bật */
+  border: 2px solid var(--primary-green);
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #eafaf1;
+  transition: box-shadow 0.3s ease;
+}
+
+.user-avatar:hover {
+  box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.2);
+}
+
+/* --- 2. HERO SECTION (Phần chính) --- */
+.hero-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  /* UPDATED: Giảm padding để thu gọn chiều cao */
+  padding: 1rem 10%;
+  /* UPDATED: Giảm chiều cao tối thiểu xuống 70vh (trước là 85vh) */
+  min-height: 70vh; 
+  overflow: hidden;
+}
+
+/* Bên trái: Nội dung chữ */
+.hero-text {
+  flex: 1;
+  z-index: 10;
+  padding-right: 4rem;
+}
+
+.hero-text h1 {
+  /* UPDATED: Giảm nhẹ font size tiêu đề cho cân đối (4rem -> 3.5rem) */
+  font-size: 3.5rem;
+  line-height: 1.15;
+  color: var(--text-dark);
+  margin-bottom: 1.5rem;
+  font-weight: 800;
+}
+
+/* Chữ màu xanh nhấn mạnh */
+.highlight {
+  color: var(--primary-green);
+  position: relative;
+  display: inline-block;
+}
+
+.hero-text p {
+  font-size: 1.1rem; /* UPDATED: Giảm nhẹ font chữ đoạn văn */
+  color: var(--text-light);
+  margin-bottom: 2rem; /* UPDATED: Giảm margin dưới */
+  line-height: 1.6;
+  max-width: 550px;
+}
+
+.btn-order {
+  /* UPDATED: Thu nhỏ nút bấm một chút (1rem -> 0.8rem) */
+  padding: 0.8rem 2.5rem;
+  background-color: var(--primary-green);
+  color: white;
+  border: none;
+  border-radius: 50px; /* Nút tròn */
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  /* Bóng đổ màu xanh tạo hiệu ứng nổi */
+  box-shadow: 0 10px 25px -10px rgba(46, 204, 113, 0.6);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-order:hover {
+  background-color: var(--secondary-green);
+  transform: translateY(-4px); /* Nổi lên cao hơn khi hover */
+  box-shadow: 0 15px 30px -10px rgba(46, 204, 113, 0.8);
+}
+
+/* Bên phải: Hình ảnh & Vòng tròn */
+.hero-image-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+/* Wrapper để căn giữa tuyệt đối các vòng tròn và ảnh */
+.centered-wrapper {
+    position: relative;
+    /* UPDATED: Giảm kích thước khung bao (580px -> 500px) */
+    width: 500px;
+    height: 500px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.circle {
+  position: absolute;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%); /* Kỹ thuật căn giữa tâm */
+}
+
+.circle-outer {
+  /* UPDATED: Thu nhỏ vòng tròn ngoài (540px -> 460px) */
+  width: 460px;
+  height: 460px;
+  background-color: var(--circle-outer);
+  z-index: 1;
+}
+
+.circle-inner {
+  /* UPDATED: Thu nhỏ vòng tròn trong (420px -> 360px) */
+  width: 360px;
+  height: 360px;
+  background-color: var(--circle-inner);
+  z-index: 2;
+}
+
+.drink-img {
+  /* UPDATED: Tăng kích thước ảnh (340px -> 420px) */
+  width: 420px; 
+  height: auto;
+  position: relative;
+  z-index: 10;
+  transform: rotate(15deg); /* Nghiêng 15 độ như ý tưởng ban đầu */
+  /* Bóng đổ sâu và mềm mại */
+  filter: drop-shadow(20px 20px 30px rgba(0,0,0,0.15));
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); /* Hiệu ứng nảy nhẹ */
+}
+
+.drink-img:hover {
+  transform: rotate(0deg) scale(1.05); /* Đứng thẳng và phóng to khi hover */
+}
+
+/* --- 3. MARQUEE (Chữ chạy chân trang) --- */
+.marquee-container {
+  background: var(--primary-green);
+  color: white;
+  padding: 1rem 0;
+  overflow: hidden;
+  white-space: nowrap;
+  /* Bóng đổ nhẹ bên trong */
+  box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.marquee-text {
+  display: inline-block;
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  /* Thời gian chạy 30s cho mượt mà */
+  animation: scroll 30s linear infinite;
+}
+
+@keyframes scroll {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+/* --- Responsive cơ bản cho màn hình nhỏ --- */
+@media (max-width: 1024px) {
+    .hero-section {
+        flex-direction: column;
+        text-align: center;
+        padding-top: 3rem;
+    }
+    .hero-text {
+        padding-right: 0;
+        margin-bottom: 4rem;
+    }
+    .hero-text h1 { font-size: 3rem; }
+    .hero-text p { margin: 0 auto 2.5rem auto; }
+    .btn-order { margin: 0 auto; }
+    .centered-wrapper {
+        width: 450px; height: 450px;
+    }
+    .circle-outer { width: 420px; height: 420px; }
+    .circle-inner { width: 320px; height: 320px; }
+    .drink-img { width: 260px; }
+}
+
+/* --- 4. FEATURED PRODUCTS (Phiên bản Big Size & Căn giữa chuẩn) --- */
+.featured-section {
+  padding: 4rem 5%;
+  background-color: #fff;
+  text-align: center;
+}
+
+.section-title { font-size: 2.5rem; color: var(--text-dark); font-weight: 800; margin-bottom: 0.5rem; }
+.section-subtitle { color: var(--text-light); margin-bottom: 5rem; /* Tăng khoảng cách để vòng tròn không bị che */ }
+
+/* Dãy nước uống */
+.drink-sequence {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.drink-item {
+  width: 260px; /* Tăng chiều rộng cột chứa (Cũ: 220px) */
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.3s ease;
+  z-index: 1;
+  position: relative; /* Quan trọng */
+}
+
+.drink-item:not(.active) { opacity: 0.6; transform: scale(0.9); }
+.drink-item:hover { opacity: 1; }
+.drink-item.active { opacity: 1; transform: scale(1.1); z-index: 10; }
+
+/* --- ẢNH (CONTAINER) --- */
+.drink-img-box {
+  width: 220px;  /* TĂNG KÍCH THƯỚC ẢNH LÊN (Cũ: 160px) */
+  height: 220px;
+  position: relative; /* Để căn các thành phần con tuyệt đối */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+/* Ảnh chính */
+.main-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* Dùng contain để lấy trọn vẹn hình dáng ly nước */
+  position: relative;
+  z-index: 2; /* Nổi lên trên vòng tròn */
+  filter: drop-shadow(0 10px 15px rgba(0,0,0,0.2)); /* Bóng đổ cho ảnh */
+}
+
+/* --- HIỆU ỨNG VÒNG TRÒN VÀNG (ĐÃ ĐỔI MÀU) --- */
+.bg-animation {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none; 
+}
+
+/* Vòng ngoài: Vàng kem rất nhạt */
+.circle-yellow-outer {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  background-color: #FFF9C4; /* Vàng kem sáng */
+  border-radius: 50%;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  animation: popIn 0.4s ease-out forwards;
+}
+
+/* Vòng trong: Vàng đậm hơn (như lòng đỏ trứng/mật ong) */
+.circle-yellow-inner {
+  position: absolute;
+  width: 240px;
+  height: 240px;
+  background-color: #FDCB6E; /* Vàng cam mật ong - Tạo độ tương phản tốt */
+  border-radius: 50%;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  animation: popIn 0.4s ease-out 0.1s forwards;
+}
+
+@keyframes popIn {
+  to { transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Cập nhật lại màu giá tiền cho hợp tông vàng (Option) */
+.drink-price { 
+  font-size: 1.1rem; 
+  color: #d35400; /* Đổi sang màu Cam Đất cho nổi trên nền vàng, thay vì xanh lá */
+  font-weight: 700; 
+  margin-top: 5px; 
+}
+
+/* --- THÔNG TIN --- */
+.drink-info { text-align: center; position: relative; z-index: 5; }
+.drink-name { font-size: 1.2rem; font-weight: 700; color: var(--text-dark); margin: 0; }
+.drink-price { font-size: 1.1rem; color: var(--primary-green); font-weight: 700; margin-top: 5px; }
+
+/* Nút bấm */
+.btn-mini-add {
+  margin-top: 10px;
+  padding: 6px 20px;
+  background-color: var(--primary-green);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 1rem;
+  opacity: 0; 
+  transform: translateY(10px);
+  transition: all 0.3s;
+  /* Căn giữa nút */
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.btn-mini-add.show { opacity: 1; transform: translateY(0); }
+.btn-mini-add:hover { background-color: var(--secondary-green); }
+
+/* --- 5. WHY CHOOSE US (Tại sao chọn chúng tôi) --- */
+.why-section {
+  padding: 4rem 10%;
+  background-color: #fcfcfc;
+}
+
+.why-grid {
+  display: flex;
+  justify-content: space-between;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.why-card {
+  flex: 1;
+  min-width: 250px;
+  background: white;
+  padding: 2rem;
+  border-radius: 15px;
+  text-align: center;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+  transition: transform 0.3s;
+  border: 1px solid #eee;
+}
+
+.why-card:hover {
+  transform: translateY(-10px);
+  border-color: var(--primary-green);
+}
+
+.icon-box {
+  font-size: 3rem;
+  color: var(--primary-green);
+  margin-bottom: 1rem;
+  transition: transform 0.3s;
+}
+
+.why-card:hover .icon-box {
+  transform: scale(1.1) rotate(10deg); /* Hiệu ứng lắc icon khi hover */
+}
+
+.why-card h3 {
+  font-size: 1.2rem;
+  color: var(--text-dark);
+  margin-bottom: 0.5rem;
+}
+
+.why-card p {
+  font-size: 0.95rem;
+  color: var(--text-light);
+  line-height: 1.5;
+}
+
+/* --- 6. FOOTER (Chân trang) --- */
+.footer {
+  background-color: #2c3e50; /* Nền màu tối cho sang trọng */
+  color: white;
+  padding-top: 4rem;
+}
+
+.footer-content {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 10% 3rem 10%;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
+.footer-col {
+  flex: 1;
+  min-width: 250px;
+}
+
+.footer-logo {
+  color: var(--primary-green);
+  margin-bottom: 1rem;
+}
+
+.footer-col p {
+  color: #bdc3c7;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.footer-col h3 {
+  font-size: 1.2rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+  display: inline-block;
+}
+
+/* Gạch chân dưới tiêu đề footer */
+.footer-col h3::after {
+  content: '';
+  position: absolute;
+  width: 50%;
+  height: 2px;
+  background: var(--primary-green);
+  bottom: -5px;
+  left: 0;
+}
+
+/* Link list */
+.footer-col ul {
+  list-style: none;
+  padding: 0;
+}
+
+.footer-col ul li {
+  margin-bottom: 0.8rem;
+}
+
+.footer-col ul li a {
+  text-decoration: none;
+  color: #bdc3c7;
+  transition: 0.3s;
+}
+
+.footer-col ul li a:hover {
+  color: var(--primary-green);
+  padding-left: 5px; /* Hiệu ứng đẩy chữ sang phải */
+}
+
+/* Contact info icons */
+.contact-info li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #bdc3c7;
+}
+
+/* Social Icons */
+.social-links {
+  display: flex;
+  gap: 1rem;
+}
+
+.social-links a {
+  width: 40px;
+  height: 40px;
+  background: rgba(255,255,255,0.1);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50%;
+  color: white;
+  text-decoration: none;
+  transition: 0.3s;
+}
+
+.social-links a:hover {
+  background: var(--primary-green);
+  transform: translateY(-3px);
+}
+
+.footer-bottom {
+  text-align: center;
+  padding: 1.5rem;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  font-size: 0.9rem;
+  color: #95a5a6;
+}
+
+/* --- CART SIDEBAR (Giỏ hàng trượt) --- */
+.overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5);
+  z-index: 2000;
+  opacity: 0;
+  visibility: hidden;
+  transition: 0.3s;
+}
+
+.overlay.open { opacity: 1; visibility: visible; }
+
+.cart-sidebar {
+  position: fixed;
+  top: 0; right: -400px; /* Ẩn sang phải */
+  width: 400px;
+  height: 100%;
+  background: white;
+  z-index: 2001;
+  box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+  transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  flex-direction: column;
+}
+
+.cart-sidebar.open { right: 0; }
+
+.cart-header {
+  padding: 20px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--primary-green);
+  color: white;
+}
+
+.btn-close {
+  background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;
+}
+
+.cart-body {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+/* Empty Cart Style */
+.empty-cart { text-align: center; margin-top: 50px; color: #888; }
+.btn-shop-now {
+  margin-top: 15px; padding: 10px 25px;
+  background: var(--primary-green); color: white;
+  border: none; border-radius: 20px; cursor: pointer;
+}
+
+/* Cart Item Style */
+.cart-item {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px dashed #eee;
+  align-items: center;
+}
+
+.cart-item img {
+  width: 70px; height: 70px; object-fit: cover; border-radius: 10px;
+}
+
+.item-details h4 { margin: 0 0 5px 0; font-size: 1rem; color: var(--text-dark); }
+.item-price { color: var(--primary-green); font-weight: bold; font-size: 0.95rem; }
+
+.quantity-controls {
+  display: flex; align-items: center; gap: 10px; margin-top: 8px;
+}
+.quantity-controls button {
+  width: 25px; height: 25px; border-radius: 50%; border: 1px solid #ddd;
+  background: white; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 0.7rem;
+}
+.quantity-controls span { font-weight: bold; font-size: 0.9rem; }
+
+.btn-remove {
+  margin-left: auto; background: none; border: none; color: #e74c3c; cursor: pointer;
+}
+
+/* Cart Footer */
+.cart-footer { padding: 20px; border-top: 1px solid #eee; background: #f9f9f9; }
+.total-row { display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; }
+.total-price { color: var(--primary-green); }
+.btn-checkout {
+  width: 100%; padding: 15px; background: var(--primary-green); color: white;
+  border: none; border-radius: 30px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.3s;
+}
+.btn-checkout:hover { background: var(--secondary-green); box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4); }
+
+/* Responsive Mobile */
+@media (max-width: 500px) {
+  .cart-sidebar { width: 100%; }
+}
+
+/* --- USER DROPDOWN & NAME (Thêm mới) --- */
+
+/* Tên người dùng bên cạnh avatar */
+.user-name-text {
+  font-weight: bold;
+  color: #2ecc71;
+  font-size: 0.9rem;
+}
+
+/* User Dropdown Menu */
+.user-dropdown {
+  position: absolute;
+  top: 120%; /* Nằm ngay dưới avatar */
+  right: 0;
+  width: 220px;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+  padding: 10px 0;
+  z-index: 1000;
+  border: 1px solid #f0f0f0;
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* Hiệu ứng hiện menu */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Mũi tên nhỏ chỉ lên trên (Optional) */
+.user-dropdown::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  right: 15px;
+  width: 12px;
+  height: 12px;
+  background: white;
+  transform: rotate(45deg);
+  border-top: 1px solid #f0f0f0;
+  border-left: 1px solid #f0f0f0;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  text-decoration: none;
+  color: #555;
+  font-size: 0.95rem;
+  transition: background 0.2s;
+  cursor: pointer;
+  width: 100%;
+  box-sizing: border-box;
+  background: none;
+  border: none;
+  text-align: left;
+}
+
+.dropdown-item:hover {
+  background-color: #f9f9f9;
+  color: var(--primary-green);
+}
+
+.dropdown-item svg {
+  color: #888;
+}
+
+.dropdown-item:hover svg {
+  color: var(--primary-green);
+}
+
+.dropdown-divider {
+  height: 1px;
+  background-color: #eee;
+  margin: 5px 0;
+}
+
+.logout-btn {
+  color: #e74c3c; /* Màu đỏ cho nút đăng xuất */
+}
+
+.logout-btn:hover {
+  background-color: #fff5f5;
+  color: #c0392b;
+}
+
+.logout-btn svg {
+  color: #e74c3c;
+}
+
+.logout-btn:hover svg {
+  color: #c0392b;
+}
