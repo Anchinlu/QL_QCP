@@ -1,350 +1,318 @@
 const db = require('../config/db');
 
-// RESERVE BÀN TẠM THỜI (5 phút)
+// --- CẤU HÌNH ---
+const SLOT_DURATION_HOURS = 2; // Mỗi lượt ăn mặc định 2 tiếng
+const CLEANUP_BUFFER_MINUTES = 15; // Thời gian dọn dẹp giữa 2 ca
+
+// Hàm tính thời gian kết thúc (Start + Duration)
+const getEndTime = (startTime) => {
+    const end = new Date(startTime);
+    end.setHours(end.getHours() + SLOT_DURATION_HOURS);
+    return end;
+};
+
+// 1. GIỮ BÀN TẠM THỜI (RESERVE)
 const reserveTable = async (req, res) => {
-    console.log('Reserve table request:', req.body);
-    console.log('User:', req.user);
-    
     const connection = await db.getConnection();
     try {
         const userId = req.user.id;
-        const { branchId, bookingTime, tableNumber } = req.body;
+        const { branchId, bookingTime, tableId } = req.body;
 
-        console.log('Parsed data:', { userId, branchId, bookingTime, tableNumber });
-
-        if (!branchId || !bookingTime || !tableNumber) {
-            console.log('Missing required fields');
-            return res.status(400).json({ message: 'Thiếu thông tin!' });
+        if (!branchId || !bookingTime || !tableId) {
+            return res.status(400).json({ message: 'Thiếu thông tin giữ bàn!' });
         }
 
         await connection.beginTransaction();
 
-        // Tính thời gian hết hạn (5 phút)
-        const reservedUntil = new Date(Date.now() + 5 * 60 * 1000);
+        // A. Kiểm tra bàn tồn tại
+        const [tables] = await connection.execute(
+            'SELECT * FROM tables WHERE id = ? AND branch_id = ? AND is_active = TRUE',
+            [tableId, branchId]
+        );
+        if (tables.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({ message: 'Bàn không tồn tại!' });
+        }
+        const currentTable = tables[0];
 
-        // Kiểm tra bàn đã được đặt hoặc reserve chưa
-        const bookingDateTime = new Date(bookingTime);
-        const hourStart = new Date(bookingDateTime);
-        hourStart.setMinutes(0, 0, 0);
+        // B. TÍNH KHUNG GIỜ
+        const reqStart = new Date(bookingTime);
+        const reqEnd = getEndTime(reqStart);
 
-        const hourEnd = new Date(bookingDateTime);
-        hourEnd.setHours(hourEnd.getHours() + 1, 0, 0, 0);
-
+        // C. KIỂM TRA TRÙNG LỊCH (Logic Giao Thoa + Buffer)
         const checkSql = `
             SELECT id FROM bookings
-            WHERE table_number = ?
-            AND branch_id = ?
-            AND booking_time >= ?
-            AND booking_time < ?
-            AND (status IN ('pending', 'confirmed') OR (status = 'reserved' AND reserved_until > NOW()))
-        `;
+            WHERE table_id = ? 
+            AND status != 'cancelled'
+            AND (
+                -- 1. Check trùng với các đơn đã chốt
+                (status IN ('pending', 'confirmed') 
+                 AND DATE_SUB(booking_time, INTERVAL ? MINUTE) < ?  
+                 AND DATE_ADD(DATE_ADD(booking_time, INTERVAL ? HOUR), INTERVAL ? MINUTE) > ? 
+                )
+                OR 
+                -- 2. Check trùng với các đơn ĐANG GIỮ CHỖ
+                (status = 'reserved' 
+                 AND reserved_until > NOW()
+                 AND DATE_SUB(booking_time, INTERVAL ? MINUTE) < ?
+                 AND DATE_ADD(DATE_ADD(booking_time, INTERVAL ? HOUR), INTERVAL ? MINUTE) > ?
+                )
+            )
+            FOR UPDATE`; 
 
-        const [existingBookings] = await connection.execute(checkSql, [
-            tableNumber, branchId, hourStart, hourEnd
-        ]);
+        const params = [
+            tableId,
+            CLEANUP_BUFFER_MINUTES, reqEnd, SLOT_DURATION_HOURS, CLEANUP_BUFFER_MINUTES, reqStart,
+            CLEANUP_BUFFER_MINUTES, reqEnd, SLOT_DURATION_HOURS, CLEANUP_BUFFER_MINUTES, reqStart
+        ];
 
-        if (existingBookings.length > 0) {
+        const [existing] = await connection.execute(checkSql, params);
+
+        if (existing.length > 0) {
             await connection.rollback();
-            return res.status(409).json({ message: 'Bàn đã được đặt hoặc đang được chọn!' });
+            return res.status(409).json({ message: 'Bàn này bị vướng lịch với khách khác!' });
         }
 
-        // Tạo reservation
-        const sql = `INSERT INTO bookings (user_id, branch_id, booking_time, table_number, status, reserved_until)
-                     VALUES (?, ?, ?, ?, 'reserved', ?)`;
-        const [result] = await connection.execute(sql, [userId, branchId, bookingTime, tableNumber, reservedUntil]);
+        // D. TẠO RESERVATION
+        const reservedUntil = new Date(Date.now() + 5 * 60 * 1000); 
+        const insertSql = `
+            INSERT INTO bookings (user_id, branch_id, booking_time, table_id, table_number, status, reserved_until) 
+            VALUES (?, ?, ?, ?, ?, 'reserved', ?)`;
+
+        const [result] = await connection.execute(insertSql, [
+            userId, branchId, bookingTime, tableId, currentTable.table_number, reservedUntil
+        ]);
 
         await connection.commit();
 
-        // Emit real-time update
+        // E. Bắn Socket
         const io = req.app.get('socketio');
-        console.log('Emitting tableReserved event for all clients');
-        io.emit('tableReserved', {
-            branchId,
-            tableNumber,
-            bookingTime: hourStart.toISOString(),
-            reservedUntil: reservedUntil.toISOString()
-        });
+        if (io) {
+            io.emit('tableReserved', {
+                tableId: tableId,
+                bookingTime: reqStart.toISOString()
+            });
+        }
 
-        res.json({
-            message: 'Đã khóa bàn tạm thời',
+        res.status(201).json({ 
+            message: 'Đã giữ bàn thành công!', 
             reservationId: result.insertId,
             expiresAt: reservedUntil
         });
 
     } catch (error) {
         await connection.rollback();
-        console.error("Reserve Error:", error);
+        console.error("Lỗi Reserve:", error);
         res.status(500).json({ message: 'Lỗi server' });
     } finally {
         connection.release();
     }
 };
 
-// HỦY RESERVATION
-const cancelReservation = async (req, res) => {
-    try {
-        const { reservationId } = req.params;
-        const userId = req.user.id;
-
-        // Lấy thông tin reservation trước khi xóa
-        const [reservations] = await db.execute(
-            'SELECT branch_id, table_number, booking_time FROM bookings WHERE id = ? AND user_id = ? AND status = ?',
-            [reservationId, userId, 'reserved']
-        );
-
-        if (reservations.length === 0) {
-            return res.status(404).json({ message: 'Reservation không tìm thấy' });
-        }
-
-        const { branch_id, table_number, booking_time } = reservations[0];
-
-        // Xóa reservation
-        await db.execute(
-            'DELETE FROM bookings WHERE id = ? AND user_id = ? AND status = ?',
-            [reservationId, userId, 'reserved']
-        );
-
-        // Emit real-time update
-        const io = req.app.get('socketio');
-        io.emit('tableReservationCancelled', {
-            branchId: branch_id,
-            tableNumber: table_number,
-            bookingTime: booking_time.toISOString()
-        });
-
-        res.json({ message: 'Đã hủy đặt trước' });
-    } catch (error) {
-        console.error("Cancel Reservation Error:", error);
-        res.status(500).json({ message: 'Lỗi server' });
-    }
-};
-
-// LẤY TÌNH TRẠNG BÀN
-const getTableAvailability = async (req, res) => {
-    try {
-        const { branchId, bookingTime } = req.query;
-        console.log('getTableAvailability called:', { branchId, bookingTime });
-
-        if (!branchId || !bookingTime) {
-            return res.status(400).json({ message: 'Thiếu thông tin branchId hoặc bookingTime' });
-        }
-
-        const bookingDateTime = new Date(bookingTime);
-        const hourStart = new Date(bookingDateTime);
-        hourStart.setMinutes(0, 0, 0);
-
-        const hourEnd = new Date(bookingDateTime);
-        hourEnd.setHours(hourEnd.getHours() + 1, 0, 0, 0);
-
-        console.log('Query time range:', hourStart.toISOString(), 'to', hourEnd.toISOString());
-
-        // Clean up expired reservations first
-        await db.execute(`
-            DELETE FROM bookings 
-            WHERE status = 'reserved' 
-            AND reserved_until < NOW()
-        `);
-
-        // Lấy tất cả bookings trong khung giờ đó
-        const [bookings] = await db.execute(`
-            SELECT table_number, status, reserved_until
-            FROM bookings
-            WHERE branch_id = ?
-            AND booking_time >= ?
-            AND booking_time < ?
-            AND status IN ('pending', 'confirmed', 'reserved')
-        `, [branchId, hourStart, hourEnd]);
-
-        console.log('Found bookings:', bookings);
-
-        // Tạo map tình trạng bàn
-        const availability = {};
-        const now = new Date();
-        console.log('Current time:', now.toISOString());
-        
-        bookings.forEach(booking => {
-            console.log('Processing booking:', booking);
-            if (booking.status === 'reserved') {
-                // Kiểm tra reservation còn hạn không
-                const reservedUntil = new Date(booking.reserved_until);
-                console.log('Reserved until:', reservedUntil.toISOString(), 'Is valid:', reservedUntil > now);
-                if (reservedUntil > now) {
-                    availability[booking.table_number] = 'reserved';
-                } else {
-                    console.log('Reservation expired, ignoring');
-                }
-            } else {
-                availability[booking.table_number] = 'booked';
-            }
-        });
-
-        console.log('Returning availability:', availability);
-        res.json(availability);
-    } catch (error) {
-        console.error("Get Table Availability Error:", error);
-        res.status(500).json({ message: 'Lỗi server' });
-    }
-};
-
+// 2. CONFIRM BOOKING
 const createBooking = async (req, res) => {
     const connection = await db.getConnection();
     try {
         const userId = req.user.id;
-        const { branchId, bookingTime, guestCount, tableNumber, note, items, reservationId } = req.body;
+        const { reservationId, guestCount, note, items } = req.body;
 
-        if (!branchId || !bookingTime || !guestCount) {
-            return res.status(400).json({ message: 'Thiếu thông tin đặt bàn!' });
-        }
+        if (!reservationId) return res.status(400).json({ message: 'Vui lòng giữ bàn trước!' });
 
         await connection.beginTransaction();
 
-        // Nếu có reservationId, kiểm tra và confirm reservation
-        if (reservationId) {
-            const [reservations] = await connection.execute(
-                'SELECT id FROM bookings WHERE id = ? AND user_id = ? AND status = ? AND reserved_until > NOW()',
-                [reservationId, userId, 'reserved']
-            );
+        // Check Reservation
+        const [rows] = await connection.execute(
+            'SELECT * FROM bookings WHERE id = ? AND user_id = ? AND status = ? AND reserved_until > NOW() FOR UPDATE',
+            [reservationId, userId, 'reserved']
+        );
 
-            if (reservations.length === 0) {
-                await connection.rollback();
-                return res.status(400).json({ message: 'Reservation không hợp lệ hoặc đã hết hạn!' });
-            }
-
-            // Update reservation thành booking thực sự
-            await connection.execute(
-                'UPDATE bookings SET guest_count = ?, note = ?, status = ? WHERE id = ?',
-                [guestCount, note || '', 'pending', reservationId]
-            );
-
-            const bookingId = reservationId;
-
-            // Thêm items nếu có
-            if (items && items.length > 0) {
-                const itemValues = items.map(item => [bookingId, item.id, item.quantity, item.price]);
-                await connection.query(`INSERT INTO booking_items (booking_id, product_id, quantity, price) VALUES ?`, [itemValues]);
-            }
-
-            await connection.commit();
-            return res.status(201).json({ message: 'Đặt bàn thành công!', bookingId });
-
-        } else {
-            // Logic tạo booking mới (như cũ nhưng với transaction)
-            // ... (code cũ)
-        }
-
-        // Bắt đầu transaction
-        await connection.beginTransaction();
-
-        // 1. KIỂM TRA BÀN TRỐNG (Trong cùng khung giờ)
-        const bookingDateTime = new Date(bookingTime);
-        const hourStart = new Date(bookingDateTime);
-        hourStart.setMinutes(0, 0, 0);
-
-        const hourEnd = new Date(bookingDateTime);
-        hourEnd.setHours(hourEnd.getHours() + 1, 0, 0, 0);
-
-        const checkSql = `
-            SELECT id FROM bookings
-            WHERE table_number = ?
-            AND branch_id = ?
-            AND booking_time >= ?
-            AND booking_time < ?
-            AND (status IN ('pending', 'confirmed') OR (status = 'reserved' AND reserved_until > NOW()))
-        `;
-
-        const [existingBookings] = await connection.execute(checkSql, [
-            tableNumber, branchId, hourStart, hourEnd
-        ]);
-
-        if (existingBookings.length > 0) {
+        if (rows.length === 0) {
             await connection.rollback();
-            return res.status(409).json({
-                message: `Xin lỗi, bàn ${tableNumber} đã được đặt trong khung giờ này!`
-            });
+            return res.status(400).json({ message: 'Hết thời gian giữ bàn hoặc bàn không hợp lệ!' });
         }
 
-        // 2. TẠO BOOKING
-        const sqlBooking = `INSERT INTO bookings (user_id, branch_id, booking_time, guest_count, table_number, note) VALUES (?, ?, ?, ?, ?, ?)`;
-        const [result] = await connection.execute(sqlBooking, [userId, branchId, bookingTime, guestCount, tableNumber, note]);
+        // Update Status
+        await connection.execute(
+            'UPDATE bookings SET guest_count = ?, note = ?, status = ?, reserved_until = NULL WHERE id = ?',
+            [guestCount, note || '', 'pending', reservationId]
+        );
 
-        // 3. THÊM ITEMS
+        // Insert Items
         if (items && items.length > 0) {
-            const bookingId = result.insertId;
-            const itemValues = items.map(item => [bookingId, item.id, item.quantity, item.price]);
+            const itemValues = items.map(item => [reservationId, item.id, item.quantity, item.price]);
             await connection.query(`INSERT INTO booking_items (booking_id, product_id, quantity, price) VALUES ?`, [itemValues]);
         }
 
         await connection.commit();
-
-        res.status(201).json({ message: 'Đặt bàn thành công!', bookingId: result.insertId });
+        res.status(201).json({ message: 'Đặt bàn thành công!', bookingId: reservationId });
 
     } catch (error) {
         await connection.rollback();
-        console.error("Booking Error:", error);
-        res.status(500).json({ message: 'Lỗi server khi đặt bàn' });
+        res.status(500).json({ message: 'Lỗi server' });
     } finally {
         connection.release();
     }
 };
 
-const getMyBookings = async (req, res) => {
+// 3. GET AVAILABILITY
+const getTableAvailability = async (req, res) => {
     try {
-        const userId = req.user.id;
-        const [bookings] = await db.execute('SELECT * FROM bookings WHERE user_id = ? ORDER BY created_at DESC', [userId]);
-        res.json(bookings);
+        const { branchId, bookingTime } = req.query;
+        if (!branchId) return res.status(400).json({ message: "Thiếu chi nhánh" });
+
+        const checkTime = bookingTime ? new Date(bookingTime) : new Date();
+        const reqStart = checkTime;
+        const reqEnd = getEndTime(checkTime);
+
+        // Dọn dẹp đơn hết hạn
+        await db.execute("DELETE FROM bookings WHERE status = 'reserved' AND reserved_until < NOW()");
+
+        const sql = `
+            SELECT table_id, status FROM bookings 
+            WHERE branch_id = ? 
+            AND status IN ('pending', 'confirmed', 'reserved')
+            AND DATE_SUB(booking_time, INTERVAL ? MINUTE) < ?
+            AND DATE_ADD(DATE_ADD(booking_time, INTERVAL ? HOUR), INTERVAL ? MINUTE) > ?
+        `;
+
+        const [bookings] = await db.execute(sql, [
+            branchId, 
+            CLEANUP_BUFFER_MINUTES, reqEnd,
+            SLOT_DURATION_HOURS, CLEANUP_BUFFER_MINUTES, reqStart
+        ]);
+
+        const availability = {};
+        bookings.forEach(b => {
+            availability[b.table_id] = b.status === 'confirmed' || b.status === 'pending' ? 'booked' : 'reserved';
+        });
+
+        res.json(availability);
+
     } catch (error) {
-        res.status(500).json({ message: 'Lỗi server' });
+        res.status(500).json({ message: error.message });
     }
 };
 
-const getAllBookings = async (req, res) => {
+// 4. HỦY GIỮ BÀN (CANCEL RESERVATION) - QUAN TRỌNG: Cần thêm hàm này để không lỗi Route
+const cancelReservation = async (req, res) => {
+    const connection = await db.getConnection();
     try {
-        const sql = `
-            SELECT b.*, u.full_name, u.phone 
-            FROM bookings b 
-            LEFT JOIN users u ON b.user_id = u.id 
-            ORDER BY b.booking_time DESC
-        `;
-        const [bookings] = await db.execute(sql);
+        const { reservationId } = req.params;
+        const userId = req.user.id;
 
-        for (let booking of bookings) {
-            const [items] = await db.execute(
-                `SELECT bi.quantity, p.name as product_name, bi.price 
-                 FROM booking_items bi 
-                 JOIN products p ON bi.product_id = p.id 
-                 WHERE bi.booking_id = ?`, 
-                [booking.id]
-            );
-            booking.items = items;
+        await connection.beginTransaction();
+
+        // Lấy thông tin bàn trước khi xóa để bắn Socket
+        const [rows] = await connection.execute(
+            "SELECT table_id FROM bookings WHERE id = ? AND user_id = ? AND status = 'reserved'",
+            [reservationId, userId]
+        );
+
+        if (rows.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({ message: "Không tìm thấy phiên giữ bàn!" });
         }
 
-        res.json(bookings);
+        const tableId = rows[0].table_id;
+
+        // Xóa đơn giữ chỗ
+        await connection.execute("DELETE FROM bookings WHERE id = ?", [reservationId]);
+
+        await connection.commit();
+
+        const io = req.app.get('socketio');
+        if (io) {
+            io.emit('tableReleased', { tableId });
+        }
+
+        res.json({ message: "Đã hủy giữ bàn thành công!" });
+
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Lỗi lấy danh sách đặt bàn' });
+        await connection.rollback();
+        console.error("Cancel Error:", error);
+        res.status(500).json({ message: "Lỗi server" });
+    } finally {
+        connection.release();
     }
 };
 
-const updateBookingStatus = async (req, res) => {
-    const { id } = req.params;
-    const { status } = req.body;
+// 5. CÁC HÀM PHỤ TRỢ KHÁC
+const getMyBookings = async (req, res) => { 
+    try { 
+        const userId = req.user.id; 
+        const [bookings] = await db.execute('SELECT * FROM bookings WHERE user_id = ? ORDER BY created_at DESC', [userId]); 
+        res.json(bookings); 
+    } catch (error) { 
+        res.status(500).json({ message: 'Lỗi server' }); 
+    } 
+};
 
+const getAllBookings = async (req, res) => { 
+    try { 
+        const sql = `SELECT b.*, u.full_name, u.phone FROM bookings b LEFT JOIN users u ON b.user_id = u.id ORDER BY b.booking_time DESC`; 
+        const [bookings] = await db.execute(sql); 
+        for (let booking of bookings) { 
+            const [items] = await db.execute(`SELECT bi.quantity, p.name as product_name, bi.price FROM booking_items bi JOIN products p ON bi.product_id = p.id WHERE bi.booking_id = ?`, [booking.id]); 
+            booking.items = items; 
+        } 
+        res.json(bookings); 
+    } catch (error) { 
+        console.error(error); 
+        res.status(500).json({ message: 'Lỗi lấy danh sách đặt bàn' }); 
+    } 
+};
+
+const updateBookingStatus = async (req, res) => { 
+    const { id } = req.params; 
+    const { status } = req.body; 
+    try { 
+        await db.execute('UPDATE bookings SET status = ? WHERE id = ?', [status, id]); 
+        res.json({ message: 'Cập nhật trạng thái thành công!' }); 
+    } catch (error) { 
+        console.error(error); 
+        res.status(500).json({ message: 'Lỗi cập nhật' }); 
+    } 
+};
+const getMyCurrentReservation = async (req, res) => {
     try {
-        await db.execute('UPDATE bookings SET status = ? WHERE id = ?', [status, id]);
-        res.json({ message: 'Cập nhật trạng thái thành công!' });
+        const userId = req.user.id;
+        
+        // Tìm đơn reserved còn hạn của user này
+        const [rows] = await db.execute(
+            `SELECT * FROM bookings 
+             WHERE user_id = ? 
+             AND status = 'reserved' 
+             AND reserved_until > NOW()`,
+            [userId]
+        );
+
+        if (rows.length > 0) {
+            // Trả về thông tin để Frontend khôi phục
+            const booking = rows[0];
+            return res.json({
+                exists: true,
+                reservationId: booking.id,
+                tableId: booking.table_id,
+                branchId: booking.branch_id,
+                bookingTime: booking.booking_time,
+                tableNumber: booking.table_number // Cần cái này để hiện tên bàn
+            });
+        } else {
+            return res.json({ exists: false });
+        }
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Lỗi cập nhật' });
+        res.status(500).json({ message: 'Lỗi kiểm tra bàn giữ' });
     }
 };
-
-// --- QUAN TRỌNG NHẤT: XUẤT ĐỦ 4 HÀM ---
+// XUẤT MODULE (Đảm bảo đủ 7 hàm)
 module.exports = {
     createBooking,
     reserveTable,
-    cancelReservation,
     getTableAvailability,
     getMyBookings,
     getAllBookings,
-    updateBookingStatus
+    updateBookingStatus,
+    getMyCurrentReservation,
+    cancelReservation
 };
