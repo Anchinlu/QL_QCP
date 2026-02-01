@@ -1,4 +1,3 @@
-// src/pages/AuthPage.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -6,8 +5,6 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { branches } from '../data/branches';
 import '../Auth.css'; 
-
-// 1. Import Toast
 import { toast } from 'react-toastify';
 
 const AuthPage = () => {
@@ -28,21 +25,16 @@ const AuthPage = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // 2. Cập nhật hàm xử lý Submit với Toast và Try/Catch
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     try {
       if (isLoginMode) {
-        // --- XỬ LÝ ĐĂNG NHẬP ---
         await login(formData.email, formData.password);
-        
-        // Nếu không có lỗi văng ra thì chạy tiếp dòng này:
         toast.success("Chào mừng bạn quay lại! ☕");
         navigate('/menu'); 
 
       } else {
-        // --- XỬ LÝ ĐĂNG KÝ ---
         const newUser = {
           fullName: formData.fullName,
           email: formData.email,
@@ -54,14 +46,11 @@ const AuthPage = () => {
         
         await register(newUser);
         
-        // Đăng ký thành công
         toast.success("Đăng ký thành công! Hãy đăng nhập ngay. ✨");
         setIsLoginMode(true);
         setFormData(prev => ({ ...prev, password: '' }));
       }
     } catch (error) {
-      // Bắt lỗi từ Backend và hiện lên Toast
-      // error.response.data.message là text lỗi server trả về (vd: "Email đã tồn tại")
       const errorMessage = error.response?.data?.message || "Có lỗi xảy ra, vui lòng thử lại!";
       toast.error(errorMessage);
     }

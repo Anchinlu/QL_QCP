@@ -1,7 +1,6 @@
 const mysql = require('mysql2');
 require('dotenv').config();
 
-// Tạo kết nối (Connection Pool)
 const pool = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -12,10 +11,8 @@ const pool = mysql.createPool({
     queueLimit: 0
 });
 
-// Chuyển sang dạng Promise để dùng async/await cho tiện
 const db = pool.promise();
 
-// Kiểm tra kết nối thử xem có lỗi không
 pool.getConnection((err, connection) => {
     if (err) {
         console.error("❌ Kết nối Database THẤT BẠI: ", err.code);

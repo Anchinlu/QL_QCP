@@ -1,4 +1,3 @@
-// src/pages/ProfilePage.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
@@ -11,11 +10,10 @@ import '../Profile.css';
 const ProfilePage = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('history'); // Mặc định vào tab lịch sử
+  const [activeTab, setActiveTab] = useState('history');
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Kiểm tra đăng nhập và lấy dữ liệu
   useEffect(() => {
     if (!user) {
       navigate('/login');
@@ -24,7 +22,6 @@ const ProfilePage = () => {
     }
   }, [user, navigate]);
 
-  // Gọi API lấy lịch sử đơn hàng
   const fetchOrders = async () => {
     try {
       const res = await api.get('/orders/my-orders');

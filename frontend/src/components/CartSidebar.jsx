@@ -1,11 +1,11 @@
 import React from 'react';
 import { FaTimes, FaTrash, FaMinus, FaPlus } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom'; // 1. Import hook chuyển trang
+import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import '../Home.css';
 
 const CartSidebar = () => {
-  const navigate = useNavigate(); // 2. Khởi tạo hook
+  const navigate = useNavigate();
   const { 
     isCartOpen, 
     setIsCartOpen, 
@@ -19,10 +19,9 @@ const CartSidebar = () => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
   };
 
-  // 3. Hàm xử lý khi bấm Thanh Toán
   const handleCheckout = () => {
-    setIsCartOpen(false); // Đóng thanh bên lại cho gọn
-    navigate('/checkout'); // Chuyển sang trang thanh toán
+    setIsCartOpen(false);
+    navigate('/checkout');
   };
 
   return (

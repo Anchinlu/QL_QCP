@@ -1,0 +1,291 @@
+/* src/Booking.css */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --primary-orange: #d35400;
+  --primary-green: #27ae60;  /* Màu xanh lá chủ đạo */
+  --bg-soft: #fdfbf7;        /* Nền kem nhạt */
+  --text-dark: #2c3e50;
+  --text-light: #7f8c8d;
+  --white: #ffffff;
+  --shadow-card: 0 10px 30px rgba(0,0,0,0.05);
+}
+
+.booking-page {
+  background-color: var(--bg-soft);
+  min-height: 100vh;
+  font-family: 'Poppins', sans-serif;
+  color: var(--text-dark);
+  position: relative;
+  overflow-x: hidden; /* Ngăn thanh cuộn ngang do icon bay */
+}
+
+/* --- 1. HIỆU ỨNG TRANG TRÍ (DECORATION) --- */
+.booking-decor-wrapper {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none; /* Không chặn click chuột */
+  z-index: 0;
+  overflow: hidden;
+}
+
+.floating-icon {
+  position: absolute;
+  font-size: 2rem;
+  opacity: 0.15;
+  color: var(--primary-green);
+  animation: floatBooking 8s ease-in-out infinite;
+}
+
+/* Vị trí các lá bay */
+.leaf-1 { top: 10%; left: 5%; animation-delay: 0s; font-size: 3rem; }
+.leaf-2 { top: 20%; right: 10%; color: #f39c12; animation-delay: 2s; font-size: 2.5rem; }
+.leaf-3 { bottom: 30%; left: 15%; animation-delay: 4s; }
+.leaf-4 { bottom: 10%; right: 20%; animation-delay: 1s; font-size: 3.5rem; }
+.leaf-5 { top: 50%; left: 50%; color: #f39c12; animation-delay: 3s; opacity: 0.1; }
+.leaf-6 { top: 15%; left: 30%; animation-delay: 5s; }
+
+@keyframes floatBooking {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(15deg); }
+}
+
+/* --- 2. CONTAINER & HEADER --- */
+.booking-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  position: relative;
+  z-index: 1; /* Nổi lên trên nền trang trí */
+}
+
+.booking-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.page-title {
+  color: var(--primary-orange); 
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 10px;
+  text-shadow: 2px 2px 0px rgba(255,255,255,0.5);
+}
+
+.page-subtitle {
+  color: var(--text-light);
+  font-size: 1.1rem;
+}
+
+/* --- 3. LAYOUT (GRID 2 CỘT) --- */
+.booking-layout {
+  display: grid;
+  grid-template-columns: 1.3fr 0.7fr; /* Cột trái rộng hơn */
+  gap: 30px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .booking-layout {
+    grid-template-columns: 1fr; /* Mobile: 1 cột */
+  }
+}
+
+/* --- 4. CARDS (KHUNG CHỨA) --- */
+.booking-info-card, .booking-menu-card {
+  background: var(--white);
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: var(--shadow-card);
+  border: 1px solid rgba(0,0,0,0.02);
+  transition: transform 0.3s;
+}
+
+.booking-info-card:hover, .booking-menu-card:hover {
+  transform: translateY(-5px); /* Hiệu ứng nổi nhẹ khi hover */
+}
+
+.card-title {
+  color: var(--text-dark);
+  font-size: 1.3rem;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 15px;
+  margin-bottom: 25px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.icon-title { color: var(--primary-green); }
+
+/* --- 5. FORM STYLES --- */
+.form-group { margin-bottom: 20px; }
+.form-row { display: flex; gap: 20px; }
+.form-row .form-group { flex: 1; margin-bottom: 0; }
+
+.form-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.input-icon { color: var(--primary-orange); opacity: 0.8; }
+
+.form-control {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: all 0.3s;
+  background-color: #fcfcfc;
+  box-sizing: border-box; /* Quan trọng để không bị vỡ layout */
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--primary-green);
+  background-color: white;
+  box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.1);
+}
+
+/* --- 6. SƠ ĐỒ BÀN (TABLE MAP) --- */
+.table-map-section {
+  background: #f8fcf9; /* Nền xanh rất nhạt */
+  padding: 20px;
+  border: 2px dashed #dbece2;
+  border-radius: 15px;
+  margin-top: 10px;
+}
+
+.map-legend {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+}
+.legend-item { display: flex; align-items: center; gap: 6px; color: #666; }
+.box { width: 14px; height: 14px; border-radius: 4px; }
+.box.available { background: white; border: 2px solid var(--primary-green); }
+.box.selected { background: var(--primary-green); border: 2px solid var(--primary-green); }
+.box.booked { background: #e74c3c; border: 2px solid #e74c3c; opacity: 0.5; }
+
+/* Grid Bàn */
+.table-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+.table-seat {
+  height: 55px;
+  background: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  color: #777;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.table-seat:hover {
+  border-color: var(--primary-green);
+  transform: translateY(-3px);
+  box-shadow: 0 5px 10px rgba(39, 174, 96, 0.15);
+}
+
+.table-seat.active {
+  background-color: var(--primary-green);
+  color: white;
+  border-color: var(--primary-green);
+  transform: scale(1.05);
+  box-shadow: 0 5px 15px rgba(39, 174, 96, 0.4);
+}
+
+/* --- 7. MENU LIST (RIGHT COLUMN) --- */
+.hint-text {
+  font-size: 0.9rem; color: #888; margin-bottom: 20px; line-height: 1.5;
+}
+
+.mini-menu-list {
+  max-height: 450px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+/* Scrollbar đẹp cho menu */
+.mini-menu-list::-webkit-scrollbar { width: 6px; }
+.mini-menu-list::-webkit-scrollbar-track { background: #f1f1f1; }
+.mini-menu-list::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
+
+.mini-product-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px dashed #eee;
+}
+
+.mini-product-item img {
+  width: 50px; height: 50px; 
+  border-radius: 10px; 
+  object-fit: cover; 
+  margin-right: 15px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.mini-info .name { font-weight: 600; font-size: 0.95rem; color: var(--text-dark); display: block; }
+.mini-info .price { color: var(--primary-orange); font-size: 0.9rem; font-weight: 700; }
+
+.qty-control {
+  display: flex; align-items: center; gap: 8px;
+  background: #f9f9f9; padding: 4px; border-radius: 20px;
+}
+
+.qty-control button {
+  width: 28px; height: 28px;
+  border: none;
+  background: white;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--primary-green);
+  font-weight: bold;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  transition: 0.2s;
+  display: flex; justify-content: center; align-items: center;
+}
+
+.qty-control button:hover { background: var(--primary-green); color: white; }
+
+/* --- 8. SUBMIT BUTTON --- */
+.btn-confirm-booking {
+  display: block; width: 100%;
+  margin-top: 25px;
+  padding: 16px;
+  background: linear-gradient(135deg, #d35400 0%, #e67e22 100%);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  box-shadow: 0 10px 20px rgba(211, 84, 0, 0.3);
+  transition: all 0.3s;
+}
+
+.btn-confirm-booking:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 30px rgba(211, 84, 0, 0.4);
+  background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+}

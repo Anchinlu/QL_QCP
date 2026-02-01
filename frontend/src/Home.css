@@ -4,8 +4,8 @@
 
 /* Bảng màu & Font */
 :root {
-  --primary-green: #13c95f;   /* Xanh lá chủ đạo */
-  --secondary-green: #27ae60; /* Xanh đậm cho hover */
+  --primary-green: #069240;   /* Xanh lá chủ đạo */
+  --secondary-green: #04a045; /* Xanh đậm cho hover */
   --text-dark: #2c3e50;       /* Màu chữ chính */
   --text-light: #7f8c8d;      /* Màu chữ phụ */
   --bg-white: #ffffff;        /* Màu nền */
@@ -786,4 +786,337 @@ body {
 
 .logout-btn:hover svg {
   color: #c0392b;
+}
+/* src/Home.css */
+/* Import font chữ hiện đại */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+/* --- BIẾN MÀU SẮC & CẤU HÌNH --- */
+:root {
+  --primary-color: #d35400;    /* Cam cháy chủ đạo */
+  --secondary-color: #f39c12;  /* Vàng cam phụ trợ */
+  --accent-green: #27ae60;     /* Xanh lá cho các yếu tố tự nhiên */
+  --text-dark: #2c3e50;
+  --text-light: #7f8c8d;
+  --bg-hero: linear-gradient(135deg, #fffcf5 0%, #fff3e0 100%); /* Nền Gradient ấm áp */
+  --bg-white: #ffffff;
+  --font-main: 'Poppins', sans-serif;
+}
+
+body {
+  font-family: var(--font-main);
+  margin: 0;
+  color: var(--text-dark);
+  background-color: var(--bg-white);
+  overflow-x: hidden; /* Ngăn thanh cuộn ngang do hiệu ứng bay */
+}
+
+/* --- HERO SECTION (PHẦN ĐẦU TRANG) --- */
+.hero-section {
+  position: relative;
+  background: var(--bg-hero);
+  min-height: 90vh; /* Cao gần hết màn hình */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 5%;
+  border-bottom-left-radius: 60px; /* Bo góc dưới mềm mại */
+  border-bottom-right-radius: 60px;
+  overflow: hidden;
+}
+
+.hero-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1200px;
+  z-index: 2; /* Nổi lên trên các icon trang trí */
+}
+
+/* --- ELEMENT TRANG TRÍ (Floating Icons) --- */
+.hero-decor .decor-item {
+  position: absolute;
+  font-size: 3rem;
+  opacity: 0.15;
+  animation: float 6s ease-in-out infinite;
+  z-index: 1;
+}
+
+.leaf-1 { top: 10%; left: 5%; color: var(--accent-green); animation-delay: 0s; }
+.leaf-2 { top: 20%; right: 10%; color: var(--secondary-color); animation-delay: 2s; font-size: 4rem; }
+.leaf-3 { bottom: 15%; left: 40%; color: var(--accent-green); animation-delay: 4s; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(10deg); }
+}
+
+/* --- HERO TEXT (CỘT TRÁI) --- */
+.hero-text {
+  flex: 1;
+  padding-right: 50px;
+}
+
+.hero-badge {
+  display: inline-block;
+  background: #ffeaa7;
+  color: #d35400;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 10px rgba(211, 84, 0, 0.15);
+}
+
+.hero-text h1 {
+  font-size: 3.8rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--text-dark);
+  margin-bottom: 1.5rem;
+}
+
+.highlight {
+  color: var(--primary-color);
+  position: relative;
+  z-index: 1;
+}
+/* Gạch chân dạ quang dưới chữ Highlight */
+.highlight::after {
+  content: '';
+  position: absolute;
+  bottom: 8px; left: 0; width: 100%; height: 12px;
+  background: rgba(243, 156, 18, 0.25);
+  z-index: -1;
+  border-radius: 4px;
+}
+
+.hero-desc {
+  font-size: 1.1rem;
+  color: var(--text-light);
+  margin-bottom: 2.5rem;
+  line-height: 1.7;
+  max-width: 550px;
+}
+
+/* Hero Buttons */
+.hero-actions {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 40px;
+}
+
+.btn-primary {
+  padding: 14px 35px;
+  background: var(--primary-color);
+  color: white;
+  border-radius: 50px;
+  font-weight: 600;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 10px 20px rgba(211, 84, 0, 0.3);
+  transition: all 0.3s;
+}
+
+.btn-secondary {
+  padding: 14px 35px;
+  background: transparent;
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
+  border-radius: 50px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s;
+}
+
+.btn-primary:hover, .btn-secondary:hover { transform: translateY(-3px); }
+.btn-secondary:hover { background: var(--primary-color); color: white; }
+
+/* Hero Stats (Thống kê nhỏ) */
+.hero-stats {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(0,0,0,0.05);
+}
+
+.stat-item { display: flex; flex-direction: column; }
+.stat-number { font-size: 1.4rem; font-weight: 800; color: var(--text-dark); }
+.stat-label { font-size: 0.9rem; color: #7f8c8d; display: flex; align-items: center; gap: 5px; }
+.stat-divider { width: 1px; height: 30px; background: #ddd; }
+.star-icon { color: #f1c40f; }
+
+/* --- HERO IMAGE (CỘT PHẢI) --- */
+.hero-image-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  position: relative;
+}
+
+.centered-wrapper {
+  position: relative;
+  width: 500px; height: 500px;
+  display: flex; justify-content: center; align-items: center;
+}
+
+.circle { position: absolute; border-radius: 50%; }
+.circle-outer { width: 100%; height: 100%; background: #fff8e1; z-index: 1; }
+.circle-inner { width: 75%; height: 75%; background: #ffe0b2; z-index: 2; }
+
+.drink-img {
+  width: 90%;
+  z-index: 10;
+  transform: rotate(-10deg);
+  filter: drop-shadow(0 25px 35px rgba(0,0,0,0.2));
+  transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.hero-image-container:hover .drink-img {
+  transform: rotate(0deg) scale(1.05);
+}
+
+/* Floating Price Card (Thẻ giá nổi) */
+.floating-price-card {
+  position: absolute;
+  bottom: 40px; right: 20px;
+  background: white;
+  padding: 15px 25px;
+  border-radius: 20px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  z-index: 11;
+  text-align: center;
+  animation: bounce 3s infinite ease-in-out;
+}
+.price-label { display: block; font-size: 0.8rem; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+.price-value { display: block; font-size: 1.8rem; font-weight: 800; color: var(--primary-color); }
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* --- MARQUEE SECTION --- */
+.marquee-section {
+  background: var(--primary-color);
+  color: white;
+  padding: 15px 0;
+  overflow: hidden;
+  white-space: nowrap;
+  box-shadow: 0 5px 15px rgba(211, 84, 0, 0.2);
+}
+
+.marquee-content {
+  display: inline-block;
+  font-size: 1.1rem;
+  font-weight: 500;
+  animation: scroll 25s linear infinite;
+}
+.separator { margin: 0 20px; opacity: 0.7; }
+
+@keyframes scroll {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+/* --- FEATURED PRODUCTS --- */
+.section-featured {
+  padding: 5rem 0;
+  background: #fff;
+}
+
+/* --- PROMO BANNER (QUẢNG CÁO GIỮA TRANG) --- */
+.promo-banner-section {
+  background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=1350&q=80');
+  background-size: cover;
+  background-attachment: fixed; /* Parallax Effect */
+  background-position: center;
+  padding: 6rem 1rem;
+  text-align: center;
+  color: white;
+  margin: 3rem 0;
+}
+
+.promo-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.promo-tag {
+  display: inline-block;
+  background: var(--primary-color);
+  padding: 5px 15px;
+  border-radius: 4px;
+  font-weight: bold;
+  text-transform: uppercase;
+  margin-bottom: 15px;
+  letter-spacing: 1px;
+}
+
+.promo-content h2 {
+  font-size: 3rem;
+  margin-bottom: 10px;
+  font-weight: 800;
+  text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+.promo-content p {
+  font-size: 1.2rem;
+  margin-bottom: 30px;
+  opacity: 0.9;
+}
+
+.btn-white {
+  display: inline-block;
+  padding: 12px 40px;
+  background: white;
+  color: var(--text-dark);
+  font-weight: 700;
+  text-decoration: none;
+  border-radius: 30px;
+  transition: all 0.3s;
+}
+.btn-white:hover {
+  background: var(--primary-color);
+  color: white;
+  transform: scale(1.05);
+}
+
+/* --- WHY CHOOSE US --- */
+.section-why-choose {
+  background: #fcf9f2; /* Màu kem rất nhạt */
+  padding: 5rem 0;
+}
+
+/* --- MOBILE RESPONSIVE --- */
+@media (max-width: 1024px) {
+  .hero-section {
+    flex-direction: column;
+    padding-top: 4rem;
+    height: auto;
+    border-radius: 0 0 40px 40px;
+  }
+  .hero-container { flex-direction: column-reverse; text-align: center; }
+  
+  .hero-text { padding-right: 0; margin-top: 40px; }
+  .hero-actions { justify-content: center; }
+  .hero-stats { justify-content: center; }
+  
+  .hero-text h1 { font-size: 2.8rem; }
+  .centered-wrapper { width: 350px; height: 350px; }
+  
+  .promo-content h2 { font-size: 2rem; }
+}
+
+@media (max-width: 768px) {
+  .hero-text h1 { font-size: 2.2rem; }
+  .centered-wrapper { width: 280px; height: 280px; }
+  .btn-primary, .btn-secondary { padding: 12px 25px; font-size: 0.9rem; }
+  .hero-stats { flex-wrap: wrap; gap: 15px; }
+  .stat-divider { display: none; }
 }

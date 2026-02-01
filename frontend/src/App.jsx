@@ -3,6 +3,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import MenuPage from './pages/MenuPage';
+import BookingPage from './pages/BookingPage';
 import AuthPage from './pages/AuthPage';
 import CheckoutPage from './pages/CheckoutPage';
 import ProfilePage from './pages/ProfilePage';
@@ -46,6 +47,7 @@ function App() {
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/orders" element={<ProfilePage />} />
             <Route path="/admin" element={<AdminPage />} />
+            <Route path="/booking" element={<BookingPage />} /> 
           </Routes>
         </Router>
       </CartProvider>
