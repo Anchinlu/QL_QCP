@@ -37,7 +37,7 @@ const AdminPage = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState({
-    name: '', price: '', image: '', description: '', category_id: '', file: null, preview: null
+    name: '', price: '', image: '', description: '', category_id: '', stock_quantity: '', file: null, preview: null
   });
 
   // --- 3. CẤU HÌNH SOCKET.IO ---
@@ -523,8 +523,9 @@ const AdminPage = () => {
                     <div className="form-group"><label>Tên món</label><input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required /></div>
                     <div className="form-row-2">
                       <div className="form-group"><label>Giá (VNĐ)</label><input type="number" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} required /></div>
-                      <div className="form-group"><label>Danh mục</label><select value={formData.category_id} onChange={e => setFormData({...formData, category_id: e.target.value})}>{categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+                      <div className="form-group"><label>Số lượng kho</label><input type="number" value={formData.stock_quantity} onChange={e => setFormData({...formData, stock_quantity: e.target.value})} placeholder="VD: 50" /></div>
                     </div>
+                    <div className="form-group"><label>Danh mục</label><select value={formData.category_id} onChange={e => setFormData({...formData, category_id: e.target.value})}>{categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
                     <div className="form-group"><label>Hình ảnh</label><input type="file" accept="image/*" onChange={(e) => { const file = e.target.files[0]; if(file) setFormData({ ...formData, file, preview: URL.createObjectURL(file) }); }} />{(formData.preview || formData.image) && (<div style={{marginTop: '10px'}}><img src={formData.preview || formData.image} alt="Preview" style={{height: '100px', width: '100px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #ddd'}} /></div>)}</div>
                     <div className="form-group"><label>Mô tả</label><textarea rows="3" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})}></textarea></div>
                     <div className="form-actions"><button type="button" className="btn-cancel" onClick={() => setShowForm(false)}>Hủy</button><button type="submit" className="btn-save">Lưu lại</button></div>

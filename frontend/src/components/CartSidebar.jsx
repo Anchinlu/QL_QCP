@@ -59,7 +59,13 @@ const CartSidebar = () => {
                   <div className="quantity-controls">
                     <button onClick={() => updateQuantity(item.id, -1)}><FaMinus /></button>
                     <span>{item.quantity}</span>
-                    <button onClick={() => updateQuantity(item.id, 1)}><FaPlus /></button>
+                    <button 
+                      onClick={() => updateQuantity(item.id, 1)}
+                      disabled={item.quantity >= item.stock_quantity}
+                      title={item.quantity >= item.stock_quantity ? `Chỉ còn ${item.stock_quantity} phần` : 'Tăng số lượng'}
+                    >
+                      <FaPlus />
+                    </button>
                   </div>
                 </div>
                 <button className="btn-remove" onClick={() => removeFromCart(item.id)}>

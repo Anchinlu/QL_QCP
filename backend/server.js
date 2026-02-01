@@ -12,6 +12,7 @@ const orderRoutes = require('./routes/orderRoutes');
 const productRoutes = require('./routes/productRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const userRoutes = require('./routes/userRoutes');
+const voucherRoutes = require('./routes/voucherRoutes');
 
 const app = express();
 
@@ -43,6 +44,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/vouchers', voucherRoutes);
 
 const PORT = process.env.PORT || 5000;
 

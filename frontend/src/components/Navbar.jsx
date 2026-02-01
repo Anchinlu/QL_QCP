@@ -96,7 +96,7 @@ const Navbar = () => {
              )}
           </div>
         ) : (
-          <Link to="/auth" className="user-avatar" title="Đăng nhập" style={{ borderColor: '#ccc' }}>
+          <Link to="/login" className="user-avatar" title="Đăng nhập" style={{ borderColor: '#ccc' }}>
              <FaUser size={20} color="#999" />
           </Link>
         )}

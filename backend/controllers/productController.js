@@ -37,19 +37,19 @@ exports.getProducts = async (req, res) => {
 // 3. [ADMIN] Thêm sản phẩm (Upload Cloudinary)
 exports.createProduct = async (req, res) => {
     try {
-        const { name, price, description, category_id } = req.body;
+        const { name, price, description, category_id, stock_quantity } = req.body;
         
-        // Mặc định lấy link ảnh từ input text (nếu user paste link)
         let imageUrl = req.body.image || '';
 
-        // Nếu có file upload lên Cloudinary (Ưu tiên lấy link từ Cloudinary)
         if (req.file) {
-            imageUrl = req.file.path; // Cloudinary trả về link ảnh trực tiếp tại đây
+            imageUrl = req.file.path;
         }
 
+        const stock = stock_quantity || 100;
+
         await db.execute(
-            'INSERT INTO products (name, price, image, description, category_id) VALUES (?, ?, ?, ?, ?)',
-            [name, price, imageUrl, description, category_id]
+            'INSERT INTO products (name, price, image, description, category_id, stock_quantity) VALUES (?, ?, ?, ?, ?, ?)',
+            [name, price, imageUrl, description, category_id, stock]
         );
 
         res.status(201).json({ message: 'Thêm món thành công!' });
@@ -63,19 +63,17 @@ exports.createProduct = async (req, res) => {
 exports.updateProduct = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, price, description, category_id } = req.body;
+        const { name, price, description, category_id, stock_quantity } = req.body;
 
-        // Giữ ảnh cũ
         let imageUrl = req.body.image;
 
-        // Nếu có file mới upload lên Cloudinary
         if (req.file) {
-            imageUrl = req.file.path; // Lấy link ảnh mới từ Cloudinary
+            imageUrl = req.file.path;
         }
 
         await db.execute(
-            'UPDATE products SET name = ?, price = ?, image = ?, description = ?, category_id = ? WHERE id = ?',
-            [name, price, imageUrl, description, category_id, id]
+            'UPDATE products SET name = ?, price = ?, image = ?, description = ?, category_id = ?, stock_quantity = ? WHERE id = ?',
+            [name, price, imageUrl, description, category_id, stock_quantity, id]
         );
 
         res.json({ message: 'Cập nhật món thành công!' });

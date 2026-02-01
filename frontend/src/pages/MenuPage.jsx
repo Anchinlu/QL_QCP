@@ -153,15 +153,23 @@ const MenuPage = () => {
                             <span className="price-value">{formatPrice(selectedProduct.price)}</span>
                          </div>
                          
-                         <button 
-                            className="btn-add-spotlight"
-                            onClick={() => {
-                                addToCart(selectedProduct);
-                                toast.success(`Đã thêm ${selectedProduct.name} vào giỏ!`);
-                            }}
-                         >
-                            <FaShoppingCart /> Thêm Ngay
-                         </button>
+                         {selectedProduct.stock_quantity > 0 ? (
+                           <button 
+                              className="btn-add-spotlight"
+                              onClick={() => {
+                                  addToCart(selectedProduct);
+                              }}
+                           >
+                              <FaShoppingCart /> Thêm Ngay
+                           </button>
+                         ) : (
+                           <button 
+                              className="btn-add-spotlight disabled"
+                              disabled
+                           >
+                              <FaShoppingCart /> Hết hàng
+                           </button>
+                         )}
                       </div>
                   </div>
                 </div>
@@ -190,17 +198,33 @@ const MenuPage = () => {
                       <h4>{product.name}</h4>
                       <div className="card-bottom">
                          <span className="card-price">{formatPrice(product.price)}</span>
-                         <button 
-                            className="btn-icon-add"
-                            title="Thêm nhanh"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                addToCart(product);
-                                toast.success(`+1 ${product.name}`);
-                            }}
-                         >
-                            +
-                         </button>
+                         {product.stock_quantity > 0 ? (
+                           <button 
+                              className="btn-icon-add"
+                              title="Thêm nhanh"
+                              onClick={(e) => {
+                                  e.stopPropagation();
+                                  addToCart(product);
+                              }}
+                           >
+                             <FaShoppingCart />
+                           </button>
+                         ) : (
+                           <button 
+                              className="btn-icon-add disabled"
+                              title="Hết hàng"
+                              disabled
+                           >
+                             <FaShoppingCart />
+                           </button>
+                         )}
+                      </div>
+                      <div className="stock-status">
+                        {product.stock_quantity > 0 ? (
+                          <span className="badge bg-success">Còn {product.stock_quantity} món</span>
+                        ) : (
+                          <span className="badge bg-danger">Hết hàng</span>
+                        )}
                       </div>
                     </div>
                   </div>

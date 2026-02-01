@@ -1,44 +1,88 @@
 const db = require('../config/db');
 
 exports.createOrder = async (req, res) => {
+    const { items, totalAmount, customerName, phone, address, note, paymentMethod, branchId } = req.body;
+    const userId = req.user ? req.user.id : null;
+    
+    // Đảm bảo các giá trị không bị undefined
+    const safeCustomerName = customerName || null;
+    const safePhone = phone || null;
+    const safeAddress = address || null;
+    const safeNote = note || null;
+    const safeTotalAmount = totalAmount || 0;
+    const safePaymentMethod = paymentMethod || 'COD';
+    const safeBranchId = branchId || null;
+    
+    // --- THÊM ĐOẠN NÀY ĐỂ DEBUG ---
+    console.log("-------------------------------------------------");
+    console.log("🔍 ĐANG KIỂM TRA DỮ LIỆU ĐẦU VÀO:");
+    console.log("User ID:", userId);
+    console.log("Customer Name:", safeCustomerName); // Kiểm tra xem có undefined không
+    console.log("Phone:", safePhone);
+    console.log("Address:", safeAddress);
+    console.log("Note:", safeNote);
+    console.log("Total Amount:", safeTotalAmount);
+    console.log("Payment Method:", safePaymentMethod);
+    console.log("Items:", JSON.stringify(items, null, 2)); // In chi tiết mảng items
+    console.log("-------------------------------------------------");
+    
+    const connection = await db.getConnection();
     try {
-        const userId = req.user ? req.user.id : null;
+        await connection.beginTransaction();
 
-        const body = req.body;
-        const customerName = body.customerName || body.customer_name;
-        const totalAmount = body.totalAmount || body.total_amount;
-        const paymentMethod = body.paymentMethod || body.payment_method;
-        const branchId = body.branchId || body.branch_id || null;
-        
-        if (!customerName || !body.items || body.items.length === 0) {
-            return res.status(400).json({ message: 'Thiếu thông tin khách hàng hoặc món ăn!' });
+        if (!safeCustomerName || !items || items.length === 0) {
+            throw new Error('Thiếu thông tin khách hàng hoặc món ăn!');
         }
 
-        const [orderResult] = await db.execute(
+        // 1. KIỂM TRA TỒN KHO
+        for (const item of items) {
+            const [rows] = await connection.execute("SELECT stock_quantity, name FROM products WHERE id = ?", [item.id]);
+            if (rows.length === 0) throw new Error(`Sản phẩm ID ${item.id} không tồn tại`);
+            
+            const product = rows[0];
+            if (product.stock_quantity < item.quantity) {
+                throw new Error(`Món '${product.name}' chỉ còn ${product.stock_quantity} phần, bạn đặt ${item.quantity} là quá lố rồi!`);
+            }
+        }
+
+        // 2. TRỪ KHO (Nếu đủ hàng)
+        for (const item of items) {
+            await connection.execute(
+                "UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?",
+                [item.quantity, item.id]
+            );
+        }
+
+        // 3. TẠO ĐƠN HÀNG
+        const [orderResult] = await connection.execute(
             'INSERT INTO orders (user_id, customer_name, phone, address, note, total_amount, payment_method, branch_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            [userId, customerName, body.phone, body.address, body.note, totalAmount, paymentMethod, branchId]
+            [userId, safeCustomerName, safePhone, safeAddress, safeNote, safeTotalAmount, safePaymentMethod, safeBranchId]
         );
         const orderId = orderResult.insertId;
 
-        for (const item of body.items) {
-            await db.execute(
+        // 4. THÊM CHI TIẾT ĐƠN HÀNG
+        for (const item of items) {
+            await connection.execute(
                 'INSERT INTO order_items (order_id, product_id, product_name, quantity, price) VALUES (?, ?, ?, ?, ?)',
                 [orderId, item.id, item.name, item.quantity, item.price]
             );
         }
 
+        await connection.commit();
+
+        // Gửi Socket IO thông báo
         try {
             const io = req.app.get('socketio');
             if (io) {
                 const newOrderPayload = {
                     id: orderId,
-                    customer_name: customerName,
-                    phone: body.phone,
-                    total_amount: totalAmount,
+                    customer_name: safeCustomerName,
+                    phone: safePhone,
+                    total_amount: safeTotalAmount,
                     status: 'pending',
                     created_at: new Date(),
-                    items: body.items.map(i => ({ product_name: i.name, quantity: i.quantity })),
-                    note: body.note
+                    items: items.map(i => ({ product_name: i.name, quantity: i.quantity })),
+                    note: safeNote
                 };
                 io.emit('new_order', newOrderPayload);
                 console.log("--> Đã gửi thông báo Socket cho Admin");
@@ -52,8 +96,10 @@ exports.createOrder = async (req, res) => {
         res.status(201).json({ message: 'Đặt hàng thành công!', orderId });
 
     } catch (error) {
-        console.error("❌ LỖI NGHIÊM TRỌNG Ở BACKEND:", error);
-        res.status(500).json({ message: 'Lỗi server: ' + error.message });
+        await connection.rollback();
+        res.status(400).json({ message: error.message });
+    } finally {
+        connection.release();
     }
 };
 

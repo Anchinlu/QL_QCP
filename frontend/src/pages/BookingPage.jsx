@@ -36,7 +36,7 @@ const BookingPage = () => {
   useEffect(() => {
     if (!user) {
       toast.warning("Vui lòng đăng nhập để đặt bàn!");
-      navigate('/auth');
+      navigate('/login');
       return;
     }
 

@@ -282,6 +282,62 @@
   font-weight: 600;
 }
 
+/* --- VOUCHER SECTION --- */
+.voucher-section {
+  margin: 15px 0;
+}
+
+.voucher-input-group {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.voucher-input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  transition: border-color 0.2s;
+}
+
+.voucher-input:focus {
+  outline: none;
+  border-color: #1877f2;
+}
+
+.btn-apply-voucher {
+  padding: 10px 16px;
+  background: #1877f2;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-apply-voucher:hover:not(:disabled) {
+  background: #166fe5;
+}
+
+.btn-apply-voucher:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.discount-row {
+  color: #13c95f !important;
+  font-weight: 600;
+}
+
+.discount-amount {
+  color: #13c95f;
+  font-weight: 600;
+}
+
 .total-row {
   display: flex;
   justify-content: space-between;

@@ -353,3 +353,35 @@
   .product-grid-modern { grid-template-columns: repeat(2, 1fr); }
   .card-img-wrapper { height: 100px; }
 }
+
+/* --- STOCK STATUS STYLES --- */
+.stock-status {
+  margin-top: 8px;
+  text-align: center;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.badge.bg-success {
+  background-color: #13c95f;
+  color: white;
+}
+
+.badge.bg-danger {
+  background-color: #dc3545;
+  color: white;
+}
+
+.btn-icon-add.disabled,
+.btn-add-spotlight.disabled {
+  background-color: #6c757d !important;
+  cursor: not-allowed !important;
+  opacity: 0.6;
+}

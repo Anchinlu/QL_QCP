@@ -5,6 +5,8 @@ import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import api from '../services/api';
+import axios from 'axios';
+import { toast } from 'react-toastify';
 import '../Checkout.css'; 
 
 const CheckoutPage = () => {
@@ -19,7 +21,10 @@ const CheckoutPage = () => {
     note: ''
   });
 
-  const [paymentMethod, setPaymentMethod] = useState('COD'); 
+  const [paymentMethod, setPaymentMethod] = useState('COD');
+  const [voucherCode, setVoucherCode] = useState("");
+  const [discount, setDiscount] = useState(0); 
+  const [loading, setLoading] = useState(false); 
 
   useEffect(() => {
     if (user) {
@@ -38,6 +43,26 @@ const CheckoutPage = () => {
     }
   }, [cartItems, navigate]);
 
+  const handleCheckVoucher = async () => {
+    if (!voucherCode) return;
+    try {
+      const subTotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+      const res = await api.post('/vouchers/check', {
+        code: voucherCode,
+        orderTotal: subTotal
+      });
+
+      if (res.data.success) {
+        setDiscount(res.data.discount);
+        toast.success(res.data.message);
+      }
+    } catch (error) {
+      setDiscount(0);
+      toast.error(error.response?.data?.message || "Lỗi kiểm tra mã");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user) {
@@ -45,30 +70,56 @@ const CheckoutPage = () => {
       navigate('/login');
       return;
     }
+
+    // --- SỬA Ở ĐÂY: Tính toán lại tổng tiền để đảm bảo không bị undefined ---
+    const subTotal = cartItems.reduce((total, item) => {
+      return total + (Number(item.price) || 0) * item.quantity;
+    }, 0);
+    const discountAmount = typeof discount !== 'undefined' ? discount : 0;
+    const finalTotal = subTotal - discountAmount > 0 ? subTotal - discountAmount : 0;
+
+    // Bắt đầu loading
+    setLoading(true);
+
     try {
       const orderData = {
-        userId: user.id,
+        userId: user.id, // Đảm bảo Backend dùng userId hoặc user_id (Backend của bạn đang dùng user_id thì sửa thành user_id: user.id)
+        user_id: user.id, // Gửi cả 2 cho chắc (Backend của bạn có vẻ map userId -> user_id)
+
         customerName: info.name,
         phone: info.phone,
         address: info.address,
         note: info.note,
-        totalAmount: cartTotal,
+
+        totalAmount: finalTotal, // Dùng biến vừa tính, không dùng cartTotal từ context nữa
+
         paymentMethod: paymentMethod,
         items: cartItems
       };
+
+      console.log("Dữ liệu gửi đi:", orderData); // Debug ở Frontend
+
       await api.post('/orders/create', orderData);
       alert("🎉 Đặt hàng thành công! Chúng tôi sẽ liên hệ sớm nhất.");
-      clearCart(); 
-      navigate('/'); 
+      clearCart();
+      navigate('/');
     } catch (error) {
       console.error(error);
-      alert("Có lỗi xảy ra, vui lòng thử lại.");
+      alert("Có lỗi xảy ra: " + (error.response?.data?.message || error.message));
+    } finally {
+      // Tắt loading dù thành công hay thất bại
+      setLoading(false);
     }
   };
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
   };
+
+  // TÍNH TOÁN TIỀN
+  const subTotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const discountAmount = typeof discount !== 'undefined' ? discount : 0;
+  const finalTotal = subTotal - discountAmount > 0 ? subTotal - discountAmount : 0;
 
   return (
     <div className="checkout-page">
@@ -213,16 +264,49 @@ const CheckoutPage = () => {
                   <span>Phí giao hàng</span>
                   <span className="free-ship">Miễn phí</span>
               </div>
-              
+
+              {/* Voucher Section */}
+              <div className="voucher-section">
+                <div className="voucher-input-group">
+                  <input
+                    type="text"
+                    placeholder="Nhập mã voucher"
+                    value={voucherCode}
+                    onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+                    className="voucher-input"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCheckVoucher}
+                    className="btn-apply-voucher"
+                    disabled={!voucherCode.trim() || loading}
+                  >
+                    {loading ? 'Đang kiểm tra...' : 'Áp dụng'}
+                  </button>
+                </div>
+                {discount > 0 && (
+                  <div className="price-row discount-row">
+                    <span>Giảm giá ({voucherCode})</span>
+                    <span className="discount-amount">-{formatPrice(discount)}</span>
+                  </div>
+                )}
+              </div>
+
               <div className="summary-divider"></div>
               
               <div className="total-row">
                 <span>Tổng thanh toán</span>
-                <span className="final-price">{formatPrice(cartTotal)}</span>
+                <span className="final-price">{formatPrice(finalTotal)}</span>
               </div>
               
-              <button type="submit" className="btn-confirm">
-                Đặt Hàng Ngay
+              {/* Vô hiệu hóa nút khi đang loading */}
+              <button 
+                type="submit" 
+                className="btn-confirm" 
+                disabled={loading}
+                style={{ opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}
+              >
+                {loading ? 'Đang xử lý...' : 'Đặt Hàng Ngay'}
               </button>
             </div>
           </div>
