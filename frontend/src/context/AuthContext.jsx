@@ -19,33 +19,20 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    try {
-      const res = await api.post('/auth/login', { email, password });
-      
-      const { user, token } = res.data;
-      
-      setUser(user);
-      localStorage.setItem('currentUser', JSON.stringify(user));
-      localStorage.setItem('token', token);
-      
-      alert('Đăng nhập thành công!');
-      return true;
-
-    } catch (error) {
-      alert(error.response?.data?.message || 'Đăng nhập thất bại');
-      return false;
-    }
+    const res = await api.post('/auth/login', { email, password });
+    
+    const { user, token } = res.data;
+    
+    setUser(user);
+    localStorage.setItem('currentUser', JSON.stringify(user));
+    localStorage.setItem('token', token);
+    
+    return true; 
   };
 
   const register = async (userData) => {
-    try {
-      await api.post('/auth/register', userData);
-      alert('Đăng ký thành công! Vui lòng đăng nhập.');
-      return true; // Báo OK để chuyển sang tab đăng nhập
-    } catch (error) {
-      alert(error.response?.data?.message || 'Đăng ký thất bại');
-      return false;
-    }
+    await api.post('/auth/register', userData);
+    return true;
   };
 
   const logout = () => {

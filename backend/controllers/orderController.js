@@ -1,10 +1,11 @@
 const db = require('../config/db');
 
+// 1. TẠO ĐƠN HÀNG MỚI (Transaction + Check Tồn kho + Socket)
 exports.createOrder = async (req, res) => {
     const { items, totalAmount, customerName, phone, address, note, paymentMethod, branchId } = req.body;
     const userId = req.user ? req.user.id : null;
     
-    // Đảm bảo các giá trị không bị undefined
+    // Validate dữ liệu đầu vào
     const safeCustomerName = customerName || null;
     const safePhone = phone || null;
     const safeAddress = address || null;
@@ -13,19 +14,11 @@ exports.createOrder = async (req, res) => {
     const safePaymentMethod = paymentMethod || 'COD';
     const safeBranchId = branchId || null;
     
-    // --- THÊM ĐOẠN NÀY ĐỂ DEBUG ---
-    console.log("-------------------------------------------------");
-    console.log("🔍 ĐANG KIỂM TRA DỮ LIỆU ĐẦU VÀO:");
-    console.log("User ID:", userId);
-    console.log("Customer Name:", safeCustomerName); // Kiểm tra xem có undefined không
-    console.log("Phone:", safePhone);
-    console.log("Address:", safeAddress);
-    console.log("Note:", safeNote);
-    console.log("Total Amount:", safeTotalAmount);
-    console.log("Payment Method:", safePaymentMethod);
-    console.log("Items:", JSON.stringify(items, null, 2)); // In chi tiết mảng items
-    console.log("-------------------------------------------------");
-    
+    // Log debug (Tùy chọn, có thể bỏ khi production)
+    console.log("--- NEW ORDER REQUEST ---");
+    console.log("User:", userId, "| Customer:", safeCustomerName);
+    console.log("Items:", items.length, "món | Total:", safeTotalAmount);
+
     const connection = await db.getConnection();
     try {
         await connection.beginTransaction();
@@ -34,7 +27,7 @@ exports.createOrder = async (req, res) => {
             throw new Error('Thiếu thông tin khách hàng hoặc món ăn!');
         }
 
-        // 1. KIỂM TRA TỒN KHO
+        // A. KIỂM TRA TỒN KHO
         for (const item of items) {
             const [rows] = await connection.execute("SELECT stock_quantity, name FROM products WHERE id = ?", [item.id]);
             if (rows.length === 0) throw new Error(`Sản phẩm ID ${item.id} không tồn tại`);
@@ -45,7 +38,7 @@ exports.createOrder = async (req, res) => {
             }
         }
 
-        // 2. TRỪ KHO (Nếu đủ hàng)
+        // B. TRỪ KHO
         for (const item of items) {
             await connection.execute(
                 "UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?",
@@ -53,14 +46,14 @@ exports.createOrder = async (req, res) => {
             );
         }
 
-        // 3. TẠO ĐƠN HÀNG
+        // C. TẠO ORDER
         const [orderResult] = await connection.execute(
             'INSERT INTO orders (user_id, customer_name, phone, address, note, total_amount, payment_method, branch_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
             [userId, safeCustomerName, safePhone, safeAddress, safeNote, safeTotalAmount, safePaymentMethod, safeBranchId]
         );
         const orderId = orderResult.insertId;
 
-        // 4. THÊM CHI TIẾT ĐƠN HÀNG
+        // D. TẠO ORDER ITEMS
         for (const item of items) {
             await connection.execute(
                 'INSERT INTO order_items (order_id, product_id, product_name, quantity, price) VALUES (?, ?, ?, ?, ?)',
@@ -70,7 +63,7 @@ exports.createOrder = async (req, res) => {
 
         await connection.commit();
 
-        // Gửi Socket IO thông báo
+        // E. GỬI SOCKET THÔNG BÁO CHO ADMIN
         try {
             const io = req.app.get('socketio');
             if (io) {
@@ -78,6 +71,7 @@ exports.createOrder = async (req, res) => {
                     id: orderId,
                     customer_name: safeCustomerName,
                     phone: safePhone,
+                    address: safeAddress,
                     total_amount: safeTotalAmount,
                     status: 'pending',
                     created_at: new Date(),
@@ -85,12 +79,10 @@ exports.createOrder = async (req, res) => {
                     note: safeNote
                 };
                 io.emit('new_order', newOrderPayload);
-                console.log("--> Đã gửi thông báo Socket cho Admin");
-            } else {
-                console.log("--> Socket.io chưa được khởi tạo (Server chưa set)");
+                console.log("--> Socket 'new_order' sent!");
             }
         } catch (socketError) {
-            console.error("--> Lỗi gửi Socket (nhưng đơn đã lưu thành công):", socketError.message);
+            console.error("--> Socket Error:", socketError.message);
         }
 
         res.status(201).json({ message: 'Đặt hàng thành công!', orderId });
@@ -103,6 +95,72 @@ exports.createOrder = async (req, res) => {
     }
 };
 
-exports.getMyOrders = async (req, res) => { try { const userId = req.user.id; const [orders] = await db.execute('SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC', [userId]); for (let order of orders) { const [items] = await db.execute('SELECT * FROM order_items WHERE order_id = ?', [order.id]); order.items = items; } res.json(orders); } catch (error) { console.error(error); res.status(500).json({ message: 'Lỗi khi lấy danh sách đơn hàng' }); } };
-exports.getAllOrders = async (req, res) => { try { const [orders] = await db.execute('SELECT * FROM orders ORDER BY created_at DESC'); for (let order of orders) { const [items] = await db.execute('SELECT * FROM order_items WHERE order_id = ?', [order.id]); order.items = items; } res.json(orders); } catch (error) { console.error(error); res.status(500).json({ message: 'Lỗi lấy danh sách toàn bộ đơn hàng' }); } };
-exports.updateOrderStatus = async (req, res) => { try { const { orderId } = req.params; const { status } = req.body; await db.execute('UPDATE orders SET status = ? WHERE id = ?', [status, orderId]); res.json({ message: `Đã cập nhật đơn hàng #${orderId} sang trạng thái: ${status}` }); } catch (error) { console.error(error); res.status(500).json({ message: 'Lỗi cập nhật trạng thái đơn hàng' }); } };
+// 2. LẤY ĐƠN HÀNG CỦA TÔI
+exports.getMyOrders = async (req, res) => { 
+    try { 
+        const userId = req.user.id; 
+        const [orders] = await db.execute('SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC', [userId]); 
+        
+        for (let order of orders) { 
+            const [items] = await db.execute('SELECT * FROM order_items WHERE order_id = ?', [order.id]); 
+            order.items = items; 
+        } 
+        res.json(orders); 
+    } catch (error) { 
+        console.error(error); 
+        res.status(500).json({ message: 'Lỗi khi lấy danh sách đơn hàng' }); 
+    } 
+};
+
+// 3. LẤY TẤT CẢ ĐƠN HÀNG (ADMIN) - CÓ BỘ LỌC
+exports.getAllOrders = async (req, res) => { 
+    try { 
+        // Nhận tham số lọc từ Query String (URL)
+        const { date, status } = req.query; 
+        
+        let sql = `SELECT * FROM orders WHERE 1=1`;
+        const params = [];
+
+        // Lọc theo ngày (Nếu có)
+        if (date) {
+            sql += ` AND DATE(created_at) = ?`;
+            params.push(date);
+        }
+
+        // Lọc theo trạng thái (Nếu có)
+        if (status && status !== 'all') {
+            sql += ` AND status = ?`;
+            params.push(status);
+        }
+
+        sql += ` ORDER BY created_at DESC`;
+
+        const [orders] = await db.execute(sql, params); 
+        
+        // Lấy chi tiết món ăn cho từng đơn
+        for (let order of orders) { 
+            const [items] = await db.execute('SELECT * FROM order_items WHERE order_id = ?', [order.id]); 
+            order.items = items; 
+        } 
+        
+        res.json(orders); 
+    } catch (error) { 
+        console.error(error); 
+        res.status(500).json({ message: 'Lỗi lấy danh sách toàn bộ đơn hàng' }); 
+    } 
+};
+
+// 4. CẬP NHẬT TRẠNG THÁI ĐƠN HÀNG (ADMIN)
+exports.updateOrderStatus = async (req, res) => { 
+    try { 
+        const { orderId } = req.params; 
+        const { status } = req.body; 
+        
+        await db.execute('UPDATE orders SET status = ? WHERE id = ?', [status, orderId]); 
+        
+        res.json({ message: `Đã cập nhật đơn hàng #${orderId} sang trạng thái: ${status}` }); 
+    } catch (error) { 
+        console.error(error); 
+        res.status(500).json({ message: 'Lỗi cập nhật trạng thái đơn hàng' }); 
+    } 
+};

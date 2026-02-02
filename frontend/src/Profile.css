@@ -167,3 +167,64 @@
   .info-row { flex-direction: column; gap: 0; }
   .info-group { margin-bottom: 15px; }
 }
+/* Style cho bộ lọc */
+.filter-tabs-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  overflow-x: auto;
+  padding-bottom: 5px;
+}
+
+.filter-tab-btn {
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  background: #f8f9fa;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.filter-tab-btn:hover {
+  background: #e9ecef;
+}
+
+.filter-tab-btn.active {
+  background: #27ae60;
+  color: white;
+  border-color: #27ae60;
+}
+
+.empty-state {
+  text-align: center;
+  color: #888;
+  padding: 40px;
+  background: #f9f9f9;
+  border-radius: 8px;
+}
+
+.branch-info {
+  font-size: 0.9rem;
+  color: #555;
+  margin-top: 4px;
+}
+
+.branch-addr {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.pre-order-items {
+  margin-top: 15px;
+  border-top: 1px dashed #eee;
+  padding-top: 10px;
+}
+
+.item-title {
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: #555;
+  margin-bottom: 5px;
+}

@@ -23,19 +23,50 @@ const BookingPage = () => {
     bookingDate: '',
     bookingTime: '',
     guestCount: 2,
-    tableId: '', // Dùng ID thật trong DB
+    tableId: '', 
     note: ''
   });
+
+  // --- QUAN TRỌNG: Dùng Ref để Socket luôn đọc được State mới nhất ---
+  const formDataRef = useRef(formData);
+  useEffect(() => {
+      formDataRef.current = formData;
+  }, [formData]);
 
   // State dữ liệu
   const [products, setProducts] = useState([]);
   const [tables, setTables] = useState([]); 
   const [selectedItems, setSelectedItems] = useState({});
-  const [tableAvailability, setTableAvailability] = useState({}); // { tableId: 'booked' | 'reserved' }
-  const [currentReservation, setCurrentReservation] = useState(null); // ID của phiên giữ bàn hiện tại
+  const [tableAvailability, setTableAvailability] = useState({});
+  const [currentReservation, setCurrentReservation] = useState(null);
   const [isLoadingTables, setIsLoadingTables] = useState(false);
   
   const socketRef = useRef(null);
+
+  // --- HÀM KIỂM TRA TRÙNG KHUNG GIỜ (LOGIC MỚI) ---
+  const isTimeOverlapping = (eventBookingTime) => {
+      const current = formDataRef.current;
+      // Nếu người dùng chưa chọn ngày giờ thì không cần check (hoặc mặc định update)
+      if (!current.bookingDate || !current.bookingTime || !eventBookingTime) return false;
+
+      // 1. Xác định khung giờ người dùng đang xem (Start -> End + 2h)
+      const viewStart = new Date(`${current.bookingDate}T${current.bookingTime}`);
+      const viewEnd = new Date(viewStart.getTime() + 2 * 60 * 60 * 1000); // Giả sử ăn 2 tiếng
+
+      // 2. Xác định khung giờ sự kiện từ Socket (Start -> End + 2h)
+      const eventStart = new Date(eventBookingTime);
+      const eventEnd = new Date(eventStart.getTime() + 2 * 60 * 60 * 1000);
+
+      // 3. Logic giao thoa (Overlap) + Buffer 15 phút dọn dẹp
+      // Công thức: (StartA < EndB) && (EndA > StartB)
+      const buffer = 15 * 60 * 1000;
+      const viewStartWithBuffer = new Date(viewStart.getTime() - buffer);
+      const viewEndWithBuffer = new Date(viewEnd.getTime() + buffer);
+
+      const isOverlap = (viewStartWithBuffer < eventEnd) && (viewEndWithBuffer > eventStart);
+      
+      return isOverlap;
+  };
 
   // 1. KẾT NỐI SOCKET & LẤY MENU
   useEffect(() => {
@@ -53,7 +84,6 @@ const BookingPage = () => {
 
       // KẾT NỐI SOCKET
       if (!socketRef.current) {
-        // Lưu ý: Đảm bảo port 5001 là port của Backend
         const newSocket = io('http://localhost:5001', {
           transports: ['websocket'],
           reconnection: true,
@@ -64,40 +94,44 @@ const BookingPage = () => {
           console.log('✅ Đã kết nối Socket:', newSocket.id);
         });
 
-        // Lắng nghe sự kiện bàn vừa được giữ
+        // --- SỰ KIỆN: BÀN ĐƯỢC GIỮ ---
         newSocket.on('tableReserved', (data) => {
-          console.log('📡 Có bàn vừa được giữ:', data);
-          setTableAvailability(prev => ({
-            ...prev,
-            [data.tableId]: 'reserved'
-          }));
+          // CHỈ UPDATE NẾU TRÙNG KHUNG GIỜ
+          if (isTimeOverlapping(data.bookingTime)) {
+              console.log(`📡 Bàn ${data.tableId} vừa được giữ vào giờ trùng khớp`);
+              setTableAvailability(prev => ({
+                ...prev,
+                [data.tableId]: 'reserved'
+              }));
 
-          // Nếu mình đang chọn bàn đó mà bị người khác cướp (và không phải do mình giữ)
-          // Logic này để UI bên mình tự reset nếu bị server từ chối
-          setFormData(curr => {
-            if (curr.tableId === data.tableId && !currentReservation) { 
-               // Chỉ báo lỗi nếu mình chưa có reservationId (tức là chưa giữ được)
-               return curr; 
-            }
-            return curr;
-          });
+              // Nếu mình đang chọn bàn đó mà bị người khác cướp
+              setFormData(curr => {
+                if (curr.tableId === data.tableId && !currentReservation) { 
+                   toast.warning("Bàn này vừa được khách khác chọn!");
+                   return { ...curr, tableId: '' }; // Bỏ chọn
+                }
+                return curr;
+              });
+          }
         });
 
-        // Lắng nghe sự kiện bàn vừa được NHẢ (Hủy giữ/Hết hạn)
-        // QUAN TRỌNG: Tên sự kiện phải khớp với Backend (tableReleased)
+        // --- SỰ KIỆN: BÀN ĐƯỢC NHẢ ---
         newSocket.on('tableReleased', (data) => {
-          console.log('📡 Bàn vừa được nhả:', data);
-          setTableAvailability(prev => {
-            const newAvail = { ...prev };
-            delete newAvail[data.tableId]; // Xóa trạng thái reserved -> Trở thành trống
-            return newAvail;
-          });
+          // CHỈ UPDATE NẾU TRÙNG KHUNG GIỜ
+          if (isTimeOverlapping(data.bookingTime)) {
+              console.log(`📡 Bàn ${data.tableId} vừa được nhả`);
+              setTableAvailability(prev => {
+                const newAvail = { ...prev };
+                delete newAvail[data.tableId];
+                return newAvail;
+              });
+          }
         });
       }
     }
 
     return () => {
-      // Cleanup
+      // Cleanup nếu cần (thường socket.io client tự handle tốt)
     };
   }, [user, loading, navigate, currentReservation]);
 
@@ -113,20 +147,21 @@ const BookingPage = () => {
                 
                 setCurrentReservation(d.reservationId);
                 
-                // Parse ngày giờ từ DB (ISO string) về format input
                 const dateObj = new Date(d.bookingTime);
-                const dateStr = dateObj.toISOString().split('T')[0];
-                const timeStr = dateObj.toTimeString().slice(0, 5);
+                // Xử lý múi giờ cục bộ để hiển thị đúng trên input date/time
+                // Lưu ý: toISOString() trả về UTC, cần convert sang Local time string phù hợp input
+                const dateStr = dateObj.toLocaleDateString('en-CA'); // Định dạng YYYY-MM-DD
+                const timeStr = dateObj.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'});
 
                 setFormData(prev => ({
                     ...prev,
                     branchId: d.branchId,
                     tableId: d.tableId,
                     bookingDate: dateStr,
-                    bookingTime: timeStr
+                    bookingTime: timeStr,
+                    guestCount: prev.guestCount 
                 }));
                 
-                // Đánh dấu bàn này là reserved trên UI local
                 setTableAvailability(prev => ({ ...prev, [d.tableId]: 'reserved' }));
                 toast.info(`Chào mừng trở lại! Bạn đang giữ bàn ${d.tableNumber}.`);
             }
@@ -156,15 +191,13 @@ const BookingPage = () => {
     }
   }, [formData.branchId]);
 
-  // 4. LẤY TÌNH TRẠNG BÀN (Booking Status)
+  // 4. LẤY TÌNH TRẠNG BÀN (Polling mỗi khi đổi ngày giờ)
   const fetchTableAvailability = useCallback(async () => {
-    if (!formData.branchId) return; // Chỉ cần có chi nhánh là check được (backend tự lấy giờ hiện tại nếu thiếu)
+    // Chỉ fetch khi đủ thông tin
+    if (!formData.branchId || !formData.bookingDate || !formData.bookingTime) return;
 
     try {
-      const bookingDateTime = (formData.bookingDate && formData.bookingTime) 
-            ? `${formData.bookingDate}T${formData.bookingTime}` 
-            : ''; // Gửi rỗng để backend lấy giờ hiện tại
-
+      const bookingDateTime = `${formData.bookingDate}T${formData.bookingTime}`;
       const res = await api.get('/bookings/availability', {
         params: {
           branchId: formData.branchId,
@@ -199,7 +232,6 @@ const BookingPage = () => {
 
     // --- TRƯỜNG HỢP 1: ĐANG CHỌN CHÍNH BÀN NÀY -> HỦY ---
     if (isMyTable) {
-        // Reset form local trước cho mượt
         setFormData({ ...formData, tableId: '' });
         
         if (currentReservation) {
@@ -207,7 +239,6 @@ const BookingPage = () => {
                 await api.delete(`/bookings/reservation/${currentReservation}`);
                 setCurrentReservation(null);
                 
-                // Xóa trạng thái reserved trên UI ngay
                 setTableAvailability(prev => {
                     const newAvail = { ...prev };
                     delete newAvail[table.id];
@@ -225,9 +256,7 @@ const BookingPage = () => {
     // --- TRƯỜNG HỢP 2: ĐỔI SANG BÀN KHÁC ---
     if (currentReservation) {
         try {
-            // Hủy bàn cũ trước
             await api.delete(`/bookings/reservation/${currentReservation}`);
-            // Xóa màu bàn cũ
             setTableAvailability(prev => {
                 const newAvail = { ...prev };
                 delete newAvail[formData.tableId];
@@ -248,17 +277,22 @@ const BookingPage = () => {
         tableId: table.id
       });
 
-      // Thành công
       setCurrentReservation(res.data.reservationId);
-      setFormData({ ...formData, tableId: table.id });
       
-      // Cập nhật local
+      // Auto-fill số người
+      setFormData({ 
+        ...formData, 
+        tableId: table.id,
+        guestCount: table.capacity 
+      });
+      
       setTableAvailability(prev => ({ ...prev, [table.id]: 'reserved' }));
-      toast.success(`Đã giữ bàn ${table.table_number}!`);
+      toast.success(`Đã giữ bàn ${table.table_number}. Tối đa ${table.capacity} khách.`);
 
     } catch (error) {
       toast.error(error.response?.data?.message || "Không thể giữ bàn này!");
-      fetchTableAvailability(); // Refresh lại nếu lỗi đồng bộ
+      // Refresh lại nếu lỗi đồng bộ
+      fetchTableAvailability(); 
     }
   };
 
@@ -319,6 +353,9 @@ const BookingPage = () => {
 
   if (loading) return <div className="text-center p-5">Đang tải...</div>;
 
+  const selectedTable = tables.find(t => t.id === formData.tableId);
+  const maxGuests = selectedTable ? selectedTable.capacity : 20;
+
   return (
     <div className="booking-page">
       <Navbar />
@@ -364,7 +401,27 @@ const BookingPage = () => {
 
             <div className="form-group">
               <label><FaUserFriends className="input-icon"/> Số người</label>
-              <input type="number" name="guestCount" className="form-control" min="1" max="20" value={formData.guestCount} onChange={handleChange} />
+              <input 
+                type="number" 
+                name="guestCount" 
+                className="form-control" 
+                min="1" 
+                max={maxGuests} 
+                value={formData.guestCount} 
+                onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    if (selectedTable && val > selectedTable.capacity) {
+                        toast.warning(`Bàn này chỉ ngồi được tối đa ${selectedTable.capacity} người thôi!`);
+                        return;
+                    }
+                    setFormData({ ...formData, guestCount: e.target.value });
+                }} 
+              />
+              {selectedTable && (
+                  <small className="text-muted" style={{fontSize: '0.8rem', display: 'block', marginTop: '5px'}}>
+                      * Tối đa {selectedTable.capacity} người cho bàn {selectedTable.table_number}
+                  </small>
+              )}
             </div>
 
             {/* SƠ ĐỒ BÀN */}

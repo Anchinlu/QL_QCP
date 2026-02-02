@@ -31,10 +31,12 @@ const AuthPage = () => {
     try {
       if (isLoginMode) {
         await login(formData.email, formData.password);
+
         toast.success("Chào mừng bạn quay lại! ☕");
-        navigate('/menu'); 
+        navigate('/'); 
 
       } else {
+        // 1. Đăng ký
         const newUser = {
           fullName: formData.fullName,
           email: formData.email,
@@ -45,12 +47,12 @@ const AuthPage = () => {
         };
         
         await register(newUser);
-        
         toast.success("Đăng ký thành công! Hãy đăng nhập ngay. ✨");
-        setIsLoginMode(true);
-        setFormData(prev => ({ ...prev, password: '' }));
+        setIsLoginMode(true); 
+        setFormData(prev => ({ ...prev, password: '' })); 
       }
     } catch (error) {
+      console.error("Auth Error:", error);
       const errorMessage = error.response?.data?.message || "Có lỗi xảy ra, vui lòng thử lại!";
       toast.error(errorMessage);
     }
@@ -62,7 +64,7 @@ const AuthPage = () => {
       
       <div className="auth-container">
         <div className="auth-card">
-          {/* Header chuyển đổi */}
+          {/* Header chuyển đổi Tab */}
           <div className="auth-toggle">
             <button 
               className={isLoginMode ? 'active' : ''} 
@@ -83,7 +85,6 @@ const AuthPage = () => {
               {isLoginMode ? 'Chào mừng trở lại!' : 'Tham gia Chinlu Quán'}
             </h2>
 
-            {/* --- CÁC TRƯỜNG CỦA ĐĂNG KÝ --- */}
             {!isLoginMode && (
               <>
                 <div className="form-group">
@@ -118,7 +119,7 @@ const AuthPage = () => {
               </>
             )}
 
-            {/* --- CÁC TRƯỜNG CHUNG --- */}
+            {/* --- CÁC TRƯỜNG CHUNG (Email & Pass) --- */}
             <div className="form-group">
               <label>Email</label>
               <input type="email" name="email" placeholder="example@gmail.com" required onChange={handleChange} />

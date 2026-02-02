@@ -14,6 +14,7 @@ const bookingRoutes = require('./routes/bookingRoutes');
 const userRoutes = require('./routes/userRoutes');
 const voucherRoutes = require('./routes/voucherRoutes');
 const tableRoutes = require('./routes/tableRoutes');
+const statsRoutes = require('./routes/statsRoutes');
 
 const app = express();
 
@@ -47,6 +48,7 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/vouchers', voucherRoutes);
 app.use('/api/tables', tableRoutes);
+app.use('/api/stats', statsRoutes);
 
 const PORT = process.env.PORT || 5000;
 
